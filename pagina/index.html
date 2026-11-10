@@ -15,30 +15,31 @@
         
         #map { width: 100vw; height: 100vh; }
 
-        /* Player Flutuante com Nome Alongado */
+        /* Player Flutuante Otimizado para Mobile e Desktop */
         #player-bar {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.95); color: #fff; padding: 8px 18px;
-            border-radius: 40px; display: flex; align-items: center; gap: 12px;
+            position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95); color: #fff; padding: 8px 14px;
+            border-radius: 40px; display: flex; align-items: center; gap: 8px;
             z-index: 1000; border: 1px solid rgba(255,255,255,0.15);
             box-shadow: 0 10px 30px rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+            max-width: 95vw;
         }
-        /* Largura aumentada para 320px para exibir o nome completo */
-        #station-info { font-size: 13px; font-weight: 600; max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #10b981; }
+        #station-info { font-size: 12px; font-weight: 600; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #10b981; }
         
-        /* Botões de Troca de Estação Sutis (Anterior e Próximo) */
+        /* Botões de Troca de Estação */
         .station-nav-btn {
             background: rgba(255, 255, 255, 0.08);
             color: #cbd5e1;
             border: 1px solid rgba(255, 255, 255, 0.15);
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
-            font-size: 12px;
+            font-size: 11px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            flex-shrink: 0;
             transition: all 0.2s ease;
         }
         .station-nav-btn:hover {
@@ -47,16 +48,16 @@
             border-color: #10b981;
         }
 
-        audio { height: 30px; outline: none; }
+        audio { height: 28px; max-width: 140px; outline: none; }
 
-        /* Botões de Continentes Posicionados Abaixo do Zoom */
+        /* Menu de Continentes Responsivo para Celular */
         .continent-selector {
             position: fixed;
-            top: 140px;
+            top: 80px;
             left: 10px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
             z-index: 1000;
         }
 
@@ -65,15 +66,15 @@
             color: #f1f5f9;
             border: 1px solid rgba(255, 255, 255, 0.15);
             font-weight: 600;
-            font-size: 12px;
-            padding: 6px 12px;
+            font-size: 11px;
+            padding: 5px 10px;
             border-radius: 6px;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             backdrop-filter: blur(6px);
             transition: all 0.2s ease;
             text-align: left;
-            min-width: 150px;
+            min-width: 130px;
         }
 
         .continent-btn:hover {
@@ -91,13 +92,37 @@
         .continent-btn.mundo:hover {
             background: #059669;
         }
+
+        /* Ajustes específicos para telas muito pequenas (Celulares) */
+        @media (max-width: 480px) {
+            #player-bar {
+                padding: 6px 10px;
+                gap: 6px;
+                bottom: 10px;
+            }
+            #station-info {
+                max-width: 110px;
+                font-size: 11px;
+            }
+            audio {
+                max-width: 110px;
+            }
+            .continent-btn {
+                font-size: 10px;
+                padding: 4px 8px;
+                min-width: 110px;
+            }
+            .continent-selector {
+                top: 70px;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div id="map"></div>
 
-    <!-- Botões de escolha de continente com "GLOBAL" -->
+    <!-- Botões de escolha de continente -->
     <div class="continent-selector">
         <button class="continent-btn mundo" onclick="irPara(20, 0, 3)">🌐 GLOBAL</button>
         <button class="continent-btn" onclick="irPara(-23.7602, -45.4042, 6)">🌎 América do Sul</button>
@@ -111,7 +136,7 @@
         <span id="station-info">Carregando Profanum MC...</span>
         <button class="station-nav-btn" onclick="mudarEstacao(-1)" title="Estação Anterior">◀</button>
         <button class="station-nav-btn" onclick="mudarEstacao(1)" title="Próxima Estação">▶</button>
-        <audio id="audio-player" controls></audio>
+        <audio id="audio-player" controls autoplay></audio>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -178,14 +203,23 @@
             }
         }
 
-        document.addEventListener('click', function iniciarAudioGlobal() {
+        // Tenta iniciar o áudio automaticamente no carregamento ou no primeiro toque na tela
+        function tentarTocarAutomatico() {
             const audio = document.getElementById('audio-player');
-            if (audio.paused && streamProfanumUrl) {
+            if (streamProfanumUrl && audio.paused) {
                 audio.src = streamProfanumUrl;
-                audio.play().catch(err => console.log("Erro ao iniciar:", err));
+                audio.play().catch(() => {
+                    // Se o navegador barrar o autoplay puro, configura o gatilho universal de primeiro toque
+                    const ativarSom = () => {
+                        audio.play();
+                        window.removeEventListener('pointerdown', ativarSom);
+                        window.removeEventListener('keydown', ativarSom);
+                    };
+                    window.addEventListener('pointerdown', ativarSom);
+                    window.addEventListener('keydown', ativarSom);
+                });
             }
-            document.removeEventListener('click', iniciarAudioGlobal);
-        }, { once: true });
+        }
 
         const apiServers = [
             'https://all.api.radio-browser.info',
@@ -206,9 +240,7 @@
                             document.getElementById('station-info').innerText = profanumStation.name;
                             const audio = document.getElementById('audio-player');
                             audio.src = streamProfanumUrl;
-                            audio.play().catch(() => {
-                                console.log("Autoplay barrado pelo navegador. Tocará no primeiro clique na página.");
-                            });
+                            tentarTocarAutomatico();
                         }
                     }
 
