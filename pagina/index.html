@@ -15,15 +15,16 @@
         
         #map { width: 100vw; height: 100vh; }
 
-        /* Player Flutuante Sempre Visível (Persistente) */
+        /* Player Flutuante com Nome Alongado */
         #player-bar {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.95); color: #fff; padding: 8px 16px;
-            border-radius: 40px; display: flex; align-items: center; gap: 10px;
+            background: rgba(15, 23, 42, 0.95); color: #fff; padding: 8px 18px;
+            border-radius: 40px; display: flex; align-items: center; gap: 12px;
             z-index: 1000; border: 1px solid rgba(255,255,255,0.15);
             box-shadow: 0 10px 30px rgba(0,0,0,0.7); backdrop-filter: blur(8px);
         }
-        #station-info { font-size: 13px; font-weight: 600; max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #10b981; }
+        /* Largura aumentada para 320px para exibir o nome completo */
+        #station-info { font-size: 13px; font-weight: 600; max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #10b981; }
         
         /* Botões de Troca de Estação Sutis (Anterior e Próximo) */
         .station-nav-btn {
@@ -177,14 +178,12 @@
             }
         }
 
-        // Desbloqueia e toca o som no primeiro clique que o usuário der na página inteira
         document.addEventListener('click', function iniciarAudioGlobal() {
             const audio = document.getElementById('audio-player');
             if (audio.paused && streamProfanumUrl) {
                 audio.src = streamProfanumUrl;
                 audio.play().catch(err => console.log("Erro ao iniciar:", err));
             }
-            // Remove o ouvinte após o primeiro clique bem-sucedido
             document.removeEventListener('click', iniciarAudioGlobal);
         }, { once: true });
 
@@ -207,8 +206,6 @@
                             document.getElementById('station-info').innerText = profanumStation.name;
                             const audio = document.getElementById('audio-player');
                             audio.src = streamProfanumUrl;
-                            
-                            // Tenta tocar direto (se o navegador permitir sem interação prévia)
                             audio.play().catch(() => {
                                 console.log("Autoplay barrado pelo navegador. Tocará no primeiro clique na página.");
                             });
