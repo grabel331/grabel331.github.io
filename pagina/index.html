@@ -110,7 +110,7 @@
         <span id="station-info">Carregando Profanum MC...</span>
         <button class="station-nav-btn" onclick="mudarEstacao(-1)" title="Estação Anterior">◀</button>
         <button class="station-nav-btn" onclick="mudarEstacao(1)" title="Próxima Estação">▶</button>
-        <audio id="audio-player" controls autoplay muted></audio>
+        <audio id="audio-player" controls></audio>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -146,6 +146,7 @@
 
         let listaEstacoes = [];
         let indiceAtual = 0;
+        let streamProfanumUrl = '';
 
         function tratarStreamUrl(station) {
             let rawUrl = station.url_resolved || station.url;
@@ -165,7 +166,6 @@
             if (streamUrl) {
                 document.getElementById('station-info').innerText = station.name;
                 const audio = document.getElementById('audio-player');
-                audio.muted = false;
                 audio.src = streamUrl;
                 audio.play().catch(err => console.log("Erro ao reproduzir:", err));
                 
@@ -177,6 +177,17 @@
             }
         }
 
+        // Desbloqueia e toca o som no primeiro clique que o usuário der na página inteira
+        document.addEventListener('click', function iniciarAudioGlobal() {
+            const audio = document.getElementById('audio-player');
+            if (audio.paused && streamProfanumUrl) {
+                audio.src = streamProfanumUrl;
+                audio.play().catch(err => console.log("Erro ao iniciar:", err));
+            }
+            // Remove o ouvinte após o primeiro clique bem-sucedido
+            document.removeEventListener('click', iniciarAudioGlobal);
+        }, { once: true });
+
         const apiServers = [
             'https://all.api.radio-browser.info',
             'https://de1.api.radio-browser.info',
@@ -186,20 +197,21 @@
         async function loadRadios() {
             for (let server of apiServers) {
                 try {
-                    // Busca dedicada para a Rádio Profanum MC Mundial
                     const resProfanum = await fetch(`${server}/json/stations/search?name=PROFANUM%20MC%20MUNDIAL&limit=5&hidebroken=true`);
                     const stationsProfanum = resProfanum.ok ? await resProfanum.json() : [];
                     
                     if (stationsProfanum.length > 0) {
                         const profanumStation = stationsProfanum.find(s => s.url_resolved || s.url);
                         if (profanumStation) {
-                            const streamUrl = tratarStreamUrl(profanumStation);
+                            streamProfanumUrl = tratarStreamUrl(profanumStation);
                             document.getElementById('station-info').innerText = profanumStation.name;
                             const audio = document.getElementById('audio-player');
-                            audio.src = streamUrl;
-                            audio.play().then(() => {
-                                setTimeout(() => { audio.muted = false; }, 1000);
-                            }).catch(err => console.log("Autoplay bloqueado:", err));
+                            audio.src = streamProfanumUrl;
+                            
+                            // Tenta tocar direto (se o navegador permitir sem interação prévia)
+                            audio.play().catch(() => {
+                                console.log("Autoplay barrado pelo navegador. Tocará no primeiro clique na página.");
+                            });
                         }
                     }
 
@@ -235,7 +247,6 @@
                                 if (streamUrl) {
                                     document.getElementById('station-info').innerText = station.name;
                                     const audio = document.getElementById('audio-player');
-                                    audio.muted = false;
                                     audio.src = streamUrl;
                                     audio.play().catch(err => console.log("Erro ao reproduzir:", err));
                                     
