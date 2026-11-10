@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rádio Global</title>
     
-    <!-- CSS do Leaflet e dos Clusters -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -16,33 +15,71 @@
         
         #map { width: 100vw; height: 100vh; }
 
-        /* Player Flutuante Minimalista */
+        /* Player Flutuante Sempre Visível (Persistente) */
         #player-bar {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             background: rgba(15, 23, 42, 0.95); color: #fff; padding: 10px 18px;
-            border-radius: 40px; display: none; align-items: center; gap: 12px;
+            border-radius: 40px; display: flex; align-items: center; gap: 12px;
             z-index: 1000; border: 1px solid rgba(255,255,255,0.2);
             box-shadow: 0 10px 30px rgba(0,0,0,0.7); backdrop-filter: blur(8px);
         }
         #station-info { font-size: 13px; font-weight: 600; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #10b981; }
         audio { height: 32px; outline: none; }
+
+        /* Botões de Países Posicionados Logo Abaixo do Zoom (+ / -) */
+        .country-selector {
+            position: fixed;
+            top: 90px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 1000;
+        }
+
+        .country-btn {
+            background: #fff;
+            color: #111;
+            border: 2px solid rgba(0,0,0,0.2);
+            font-weight: bold;
+            font-size: 12px;
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+        }
+
+        .country-btn:hover {
+            background: #10b981;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
 
     <div id="map"></div>
 
+    <!-- Botões de escolha de país abaixo do Zoom -->
+    <div class="country-selector">
+        <button class="country-btn" onclick="irPara(-23.7602, -45.4042, 9)">🇧🇷 BR</button>
+        <button class="country-btn" onclick="irPara(40.7128, -74.0060, 5)">🇺🇸 EUA</button>
+        <button class="country-btn" onclick="irPara(46.6033, 1.8883, 5)">🇫🇷 FRA</button>
+        <button class="country-btn" onclick="irPara(51.1657, 10.4515, 5)">🇩🇪 ALE</button>
+        <button class="country-btn" onclick="irPara(20, 0, 3)">🌐 MUNDO</button>
+    </div>
+
+    <!-- Player Persistente -->
     <div id="player-bar">
-        <span id="station-info">Selecione uma rádio</span>
+        <span id="station-info">Carregando rádio...</span>
         <audio id="audio-player" controls autoplay></audio>
     </div>
 
-    <!-- Scripts do Leaflet -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
     <script>
-        // 1. AJUSTE DO MAPA: Centraliza em São Sebastião e limita o mundo para evitar repetição
+        // Centraliza em São Sebastião e limita a repetição do mapa
         const map = L.map('map', { 
             center: [-23.7602, -45.4042], 
             zoom: 9, 
@@ -58,7 +95,7 @@
             attribution: '&copy; OpenStreetMap'
         }).addTo(map);
 
-        const markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 45 });
+        const markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40 });
 
         const radioIcon = L.divIcon({
             className: 'custom-radio-icon',
@@ -66,28 +103,55 @@
             iconSize: [12, 12]
         });
 
-        // Servidores públicos livres da Radio-Browser
+        function irPara(lat, lng, zoom) {
+            map.flyTo([lat, lng], zoom, { duration: 1.5 });
+        }
+
         const apiServers = [
             'https://all.api.radio-browser.info',
             'https://de1.api.radio-browser.info',
             'https://nl1.api.radio-browser.info'
         ];
 
-        // 2. CARREGAMENTO DAS RÁDIOS
         async function loadRadios() {
             for (let server of apiServers) {
                 try {
-                    const res = await fetch(`${server}/json/stations/search?has_geo=true&limit=6000&hidebroken=true`);
-                    if (!res.ok) continue;
-                    
-                    const stations = await res.json();
-                    const markerList = [];
+                    // Busca massiva exata do código que você enviou (8000 global + 3000 Brasil)
+                    const [resGlobal, resBrasil] = await Promise.all([
+                        fetch(`${server}/json/stations/search?has_geo=true&limit=8000&hidebroken=true`),
+                        fetch(`${server}/json/stations/search?countrycode=BR&has_geo=true&limit=3000&hidebroken=true`)
+                    ]);
 
-                    stations.forEach(station => {
+                    if (!resGlobal.ok && !resBrasil.ok) continue;
+
+                    const stationsGlobal = resGlobal.ok ? await resGlobal.json() : [];
+                    const stationsBrasil = resBrasil.ok ? await resBrasil.json() : [];
+
+                    const mapStations = new Map();
+                    [...stationsBrasil, ...stationsGlobal].forEach(s => {
+                        if (s.stationuuid && !mapStations.has(s.stationuuid)) {
+                            mapStations.set(s.stationuuid, s);
+                        }
+                    });
+
+                    const markerList = [];
+                    let radioInicialDefinida = false;
+
+                    mapStations.forEach(station => {
                         const lat = parseFloat(station.geo_lat);
                         const lng = parseFloat(station.geo_long);
 
                         if (!isNaN(lat) && !isNaN(lng)) {
+                            // Toca a primeira rádio automaticamente no player persistente
+                            if (!radioInicialDefinida) {
+                                const streamUrl = station.url_resolved || station.url;
+                                if (streamUrl) {
+                                    document.getElementById('station-info').innerText = station.name;
+                                    document.getElementById('audio-player').src = streamUrl;
+                                    radioInicialDefinida = true;
+                                }
+                            }
+
                             const marker = L.marker([lat, lng], { icon: radioIcon });
                             
                             marker.on('click', () => {
@@ -96,20 +160,22 @@
                                     document.getElementById('station-info').innerText = station.name;
                                     const audio = document.getElementById('audio-player');
                                     audio.src = streamUrl;
-                                    document.getElementById('player-bar').style.display = 'flex';
+                                    audio.play();
                                 }
                             });
 
-                            marker.bindTooltip(`<b>${station.name}</b><br>${station.country || ''}`, { direction: 'top' });
+                            marker.bindTooltip(`<b>${station.name}</b><br>${station.state || ''} - ${station.country || ''}`, { direction: 'top' });
                             markerList.push(marker);
                         }
                     });
 
-                    markers.addLayers(markerList);
-                    map.addLayer(markers);
-                    break;
+                    if (markerList.length > 0) {
+                        markers.addLayers(markerList);
+                        map.addLayer(markers);
+                        break;
+                    }
                 } catch (e) {
-                    console.warn(`Tentando próximo servidor...`, e);
+                    console.warn(`Tentando próximo servidor...`);
                 }
             }
         }
