@@ -48,10 +48,10 @@
 
         audio { height: 30px; outline: none; }
 
-        /* Botões de Continentes Posicionados Abaixo do Zoom (Posição Correta) */
+        /* Botões de Continentes Posicionados Abaixo do Zoom */
         .continent-selector {
             position: fixed;
-            top: 140px; /* Logo abaixo dos controles de zoom do Leaflet */
+            top: 140px;
             left: 10px;
             display: flex;
             flex-direction: column;
@@ -96,7 +96,7 @@
 
     <div id="map"></div>
 
-    <!-- Botões de escolha de continente posicionados corretamente abaixo do zoom -->
+    <!-- Botões de escolha de continente -->
     <div class="continent-selector">
         <button class="continent-btn mundo" onclick="irPara(20, 0, 3)">🌐 MUNDO</button>
         <button class="continent-btn" onclick="irPara(-23.7602, -45.4042, 6)">🌎 América do Sul</button>
@@ -105,7 +105,7 @@
         <button class="continent-btn" onclick="irPara(30.0, 100.0, 3)">🌏 Ásia e Oceania</button>
     </div>
 
-    <!-- Player Persistente com Botões Sutis de Anterior e Próximo -->
+    <!-- Player Persistente com Autoplay Ativo -->
     <div id="player-bar">
         <span id="station-info">Carregando Band FM...</span>
         <button class="station-nav-btn" onclick="mudarEstacao(-1)" title="Estação Anterior">◀</button>
@@ -184,7 +184,9 @@
                         if (bandStation) {
                             const streamUrl = bandStation.url_resolved || bandStation.url;
                             document.getElementById('station-info').innerText = bandStation.name;
-                            document.getElementById('audio-player').src = streamUrl;
+                            const audio = document.getElementById('audio-player');
+                            audio.src = streamUrl;
+                            audio.play().catch(err => console.log("Autoplay bloqueado pelo navegador:", err));
                         }
                     }
 
