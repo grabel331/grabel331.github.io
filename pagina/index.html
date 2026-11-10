@@ -114,7 +114,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.js"></script>
 
     <script>
         const map = L.map('map', { 
@@ -147,12 +147,22 @@
         let listaEstacoes = [];
         let indiceAtual = 0;
 
+        // Função para corrigir links HTTP em ambiente HTTPS (evita bloqueio de Mixed Content)
+        function tratarStreamUrl(station) {
+            let rawUrl = station.url_resolved || station.url;
+            if (!rawUrl) return '';
+            if (window.location.protocol === 'https:' && rawUrl.startsWith('http://')) {
+                return rawUrl.replace('http://', 'https://');
+            }
+            return rawUrl;
+        }
+
         function mudarEstacao(direcao) {
             if (listaEstacoes.length === 0) return;
             indiceAtual = (indiceAtual + direcao + listaEstacoes.length) % listaEstacoes.length;
             const station = listaEstacoes[indiceAtual];
             
-            const streamUrl = station.url_resolved || station.url;
+            const streamUrl = tratarStreamUrl(station);
             if (streamUrl) {
                 document.getElementById('station-info').innerText = station.name;
                 const audio = document.getElementById('audio-player');
@@ -182,7 +192,7 @@
                     if (stationsBand.length > 0) {
                         const bandStation = stationsBand.find(s => s.url_resolved || s.url);
                         if (bandStation) {
-                            const streamUrl = bandStation.url_resolved || bandStation.url;
+                            const streamUrl = tratarStreamUrl(bandStation);
                             document.getElementById('station-info').innerText = bandStation.name;
                             const audio = document.getElementById('audio-player');
                             audio.src = streamUrl;
@@ -218,7 +228,7 @@
                             const marker = L.marker([lat, lng], { icon: radioIcon });
                             
                             marker.on('click', () => {
-                                const streamUrl = station.url_resolved || station.url;
+                                const streamUrl = tratarStreamUrl(station);
                                 if (streamUrl) {
                                     document.getElementById('station-info').innerText = station.name;
                                     const audio = document.getElementById('audio-player');
