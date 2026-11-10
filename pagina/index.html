@@ -24,7 +24,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.7); backdrop-filter: blur(8px);
             max-width: 95vw;
         }
-        #station-info { font-size: 12px; font-weight: 600; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #10b981; }
+        #station-info { font-size: 12px; font-weight: 600; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #10b981; }
         
         /* Botões de Troca de Estação */
         .station-nav-btn {
@@ -93,28 +93,12 @@
             background: #059669;
         }
 
-        /* Ajustes específicos para telas muito pequenas (Celulares) */
         @media (max-width: 480px) {
-            #player-bar {
-                padding: 6px 10px;
-                gap: 6px;
-                bottom: 10px;
-            }
-            #station-info {
-                max-width: 110px;
-                font-size: 11px;
-            }
-            audio {
-                max-width: 110px;
-            }
-            .continent-btn {
-                font-size: 10px;
-                padding: 4px 8px;
-                min-width: 110px;
-            }
-            .continent-selector {
-                top: 70px;
-            }
+            #player-bar { padding: 6px 10px; gap: 6px; bottom: 10px; }
+            #station-info { max-width: 130px; font-size: 11px; }
+            audio { max-width: 110px; }
+            .continent-btn { font-size: 10px; padding: 4px 8px; min-width: 110px; }
+            .continent-selector { top: 70px; }
         }
     </style>
 </head>
@@ -124,7 +108,7 @@
 
     <!-- Botões de escolha de continente -->
     <div class="continent-selector">
-        <button class="continent-btn mundo" onclick="irPara(20, 0, 3)">🌐 GLOBAL</button>
+        <button class="continent-btn mundo" onclick="irParaGlobal()">🌐 GLOBAL</button>
         <button class="continent-btn" onclick="irPara(-23.7602, -45.4042, 6)">🌎 América do Sul</button>
         <button class="continent-btn" onclick="irPara(40.0, -100.0, 4)">🌎 América do Norte</button>
         <button class="continent-btn" onclick="irPara(50.0, 10.0, 4)">🌍 Europa</button>
@@ -140,7 +124,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.markercluster.js"></script>
 
     <script>
         const map = L.map('map', { 
@@ -168,6 +152,19 @@
 
         function irPara(lat, lng, zoom) {
             map.flyTo([lat, lng], zoom, { duration: 1.5 });
+        }
+
+        // Função específica para o botão Global: move o mapa e garante o play na rádio principal
+        function irParaGlobal() {
+            map.flyTo([20, 0, 3], 3, { duration: 1.5 });
+            const audio = document.getElementById('audio-player');
+            if (streamProfanumUrl) {
+                if (audio.src !== streamProfanumUrl) {
+                    audio.src = streamProfanumUrl;
+                    document.getElementById('station-info').innerText = "RÁDIO PROFANUM MC MUNDIAL";
+                }
+                audio.play().catch(err => console.log("Erro ao reproduzir:", err));
+            }
         }
 
         let listaEstacoes = [];
@@ -203,23 +200,19 @@
             }
         }
 
-        // Tenta iniciar o áudio automaticamente no carregamento ou no primeiro toque na tela
-        function tentarTocarAutomatico() {
+        // Sistema para garantir o autoplay e desbloquear o áudio no primeiro toque na tela (para celulares e PCs)
+        function habilitarAutoplay() {
             const audio = document.getElementById('audio-player');
             if (streamProfanumUrl && audio.paused) {
                 audio.src = streamProfanumUrl;
-                audio.play().catch(() => {
-                    // Se o navegador barrar o autoplay puro, configura o gatilho universal de primeiro toque
-                    const ativarSom = () => {
-                        audio.play();
-                        window.removeEventListener('pointerdown', ativarSom);
-                        window.removeEventListener('keydown', ativarSom);
-                    };
-                    window.addEventListener('pointerdown', ativarSom);
-                    window.addEventListener('keydown', ativarSom);
-                });
+                audio.play().catch(() => {});
             }
+            window.removeEventListener('pointerdown', habilitarAutoplay);
+            window.removeEventListener('keydown', habilitarAutoplay);
         }
+
+        window.addEventListener('pointerdown', habilitarAutoplay);
+        window.addEventListener('keydown', habilitarAutoplay);
 
         const apiServers = [
             'https://all.api.radio-browser.info',
@@ -240,7 +233,9 @@
                             document.getElementById('station-info').innerText = profanumStation.name;
                             const audio = document.getElementById('audio-player');
                             audio.src = streamProfanumUrl;
-                            tentarTocarAutomatico();
+                            audio.play().catch(() => {
+                                console.log("Autoplay restrito pelo navegador. Tecerá ao primeiro toque.");
+                            });
                         }
                     }
 
