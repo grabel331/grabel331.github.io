@@ -1,61 +1,10 @@
-<!-- 
-
-
 <!DOCTYPE html>
-<html lang="pt-BR">
-  <html>
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gabriel Pereira</title>
- <style>
-    body {
-      font-family: sans-serif;
-      padding: 1rem;
-      max-width: 800px;
-      margin: 0 auto;
-      text-align: center;
-    }
-    a {
-      color: inherit;
-    }
-    h2 {
-      margin-top: 1rem;
-    }
-    p {
-      margin: 0.5rem 0;
-    }
-    a {
-  text-decoration: none;
-}
-  </style>
-</head>
-  
-
-  
-  <a href="https://gabrielpereira.net.eu.org/"> home </a> 
-  <a href="https://gabrielpereira.net.eu.org/sobre"> Sobre </a>
-<br>
-
-
-  <main>
-    <h2>Bem Vindo!</h2>
-    <p>Não visivel para apressados, complexo para curiosos e simples para quem tem afinidade com tecnologia</p>
-    <p><a href="google.com">Mais tem um atalho!!!</a></p> (aqui colocar algo legal, que leve ao entender raiz do site)
-</main>
-
-    
-
-<body>
--->
-  <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rádio Global</title>
     
-    <!-- CSS do Leaflet e dos Clusters (Sem necessidade de API Key) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -66,42 +15,124 @@
         
         #map { width: 100vw; height: 100vh; }
 
-        /* Player Flutuante Minimalista */
+        /* Player Flutuante Sempre Visível (Persistente) */
         #player-bar {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.95); color: #fff; padding: 10px 18px;
-            border-radius: 40px; display: none; align-items: center; gap: 12px;
-            z-index: 1000; border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(15, 23, 42, 0.95); color: #fff; padding: 8px 16px;
+            border-radius: 40px; display: flex; align-items: center; gap: 10px;
+            z-index: 1000; border: 1px solid rgba(255,255,255,0.15);
             box-shadow: 0 10px 30px rgba(0,0,0,0.7); backdrop-filter: blur(8px);
         }
-        #station-info { font-size: 13px; font-weight: 600; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #10b981; }
-        audio { height: 32px; outline: none; }
+        #station-info { font-size: 13px; font-weight: 600; max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #10b981; }
+        
+        /* Botões de Troca de Estação Sutis (Anterior e Próximo) */
+        .station-nav-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .station-nav-btn:hover {
+            background: #10b981;
+            color: #fff;
+            border-color: #10b981;
+        }
+
+        audio { height: 30px; outline: none; }
+
+        /* Botões de Continentes Posicionados Abaixo do Zoom */
+        .continent-selector {
+            position: fixed;
+            top: 140px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 1000;
+        }
+
+        .continent-btn {
+            background: rgba(15, 23, 42, 0.9);
+            color: #f1f5f9;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            font-weight: 600;
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            backdrop-filter: blur(6px);
+            transition: all 0.2s ease;
+            text-align: left;
+            min-width: 150px;
+        }
+
+        .continent-btn:hover {
+            background: #10b981;
+            color: #fff;
+            border-color: #10b981;
+        }
+
+        .continent-btn.mundo {
+            background: #047857;
+            color: #fff;
+            border-color: #059669;
+        }
+
+        .continent-btn.mundo:hover {
+            background: #059669;
+        }
     </style>
 </head>
 <body>
 
     <div id="map"></div>
 
-    <div id="player-bar">
-        <span id="station-info">Selecione uma rádio</span>
-        <audio id="audio-player" controls autoplay></audio>
+    <!-- Botões de escolha de continente com "GLOBAL" -->
+    <div class="continent-selector">
+        <button class="continent-btn mundo" onclick="irPara(20, 0, 3)">🌐 GLOBAL</button>
+        <button class="continent-btn" onclick="irPara(-23.7602, -45.4042, 6)">🌎 América do Sul</button>
+        <button class="continent-btn" onclick="irPara(40.0, -100.0, 4)">🌎 América do Norte</button>
+        <button class="continent-btn" onclick="irPara(50.0, 10.0, 4)">🌍 Europa</button>
+        <button class="continent-btn" onclick="irPara(30.0, 100.0, 3)">🌏 Ásia e Oceania</button>
     </div>
 
-    <!-- Scripts do Leaflet -->
+    <!-- Player Persistente -->
+    <div id="player-bar">
+        <span id="station-info">Carregando Profanum MC...</span>
+        <button class="station-nav-btn" onclick="mudarEstacao(-1)" title="Estação Anterior">◀</button>
+        <button class="station-nav-btn" onclick="mudarEstacao(1)" title="Próxima Estação">▶</button>
+        <audio id="audio-player" controls></audio>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
     <script>
-        // Inicializa o mapa centralizado no mundo
-        const map = L.map('map', { center: [20, 0], zoom: 3, minZoom: 2 });
+        const map = L.map('map', { 
+            center: [-23.7602, -45.4042], 
+            zoom: 9, 
+            minZoom: 2,
+            maxBounds: [[-90, -180], [90, 180]],
+            maxBoundsViscosity: 1.0
+        });
 
-        // TDF Totalmente Gratuito (OpenStreetMap - sem API Key)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
+            noWrap: true,
+            bounds: [[-90, -180], [90, 180]],
             attribution: '&copy; OpenStreetMap'
         }).addTo(map);
 
-        const markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 45 });
+        const markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40 });
 
         const radioIcon = L.divIcon({
             className: 'custom-radio-icon',
@@ -109,7 +140,54 @@
             iconSize: [12, 12]
         });
 
-        // Servidores públicos livres da Radio-Browser
+        function irPara(lat, lng, zoom) {
+            map.flyTo([lat, lng], zoom, { duration: 1.5 });
+        }
+
+        let listaEstacoes = [];
+        let indiceAtual = 0;
+        let streamProfanumUrl = '';
+
+        function tratarStreamUrl(station) {
+            let rawUrl = station.url_resolved || station.url;
+            if (!rawUrl) return '';
+            if (window.location.protocol === 'https:' && rawUrl.startsWith('http://')) {
+                return rawUrl.replace('http://', 'https://');
+            }
+            return rawUrl;
+        }
+
+        function mudarEstacao(direcao) {
+            if (listaEstacoes.length === 0) return;
+            indiceAtual = (indiceAtual + direcao + listaEstacoes.length) % listaEstacoes.length;
+            const station = listaEstacoes[indiceAtual];
+            
+            const streamUrl = tratarStreamUrl(station);
+            if (streamUrl) {
+                document.getElementById('station-info').innerText = station.name;
+                const audio = document.getElementById('audio-player');
+                audio.src = streamUrl;
+                audio.play().catch(err => console.log("Erro ao reproduzir:", err));
+                
+                const lat = parseFloat(station.geo_lat);
+                const lng = parseFloat(station.geo_long);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    map.flyTo([lat, lng], map.getZoom(), { duration: 1.0 });
+                }
+            }
+        }
+
+        // Desbloqueia e toca o som no primeiro clique que o usuário der na página inteira
+        document.addEventListener('click', function iniciarAudioGlobal() {
+            const audio = document.getElementById('audio-player');
+            if (audio.paused && streamProfanumUrl) {
+                audio.src = streamProfanumUrl;
+                audio.play().catch(err => console.log("Erro ao iniciar:", err));
+            }
+            // Remove o ouvinte após o primeiro clique bem-sucedido
+            document.removeEventListener('click', iniciarAudioGlobal);
+        }, { once: true });
+
         const apiServers = [
             'https://all.api.radio-browser.info',
             'https://de1.api.radio-browser.info',
@@ -119,13 +197,45 @@
         async function loadRadios() {
             for (let server of apiServers) {
                 try {
-                    const res = await fetch(`${server}/json/stations/search?has_geo=true&limit=6000`);
-                    if (!res.ok) continue;
+                    const resProfanum = await fetch(`${server}/json/stations/search?name=PROFANUM%20MC%20MUNDIAL&limit=5&hidebroken=true`);
+                    const stationsProfanum = resProfanum.ok ? await resProfanum.json() : [];
                     
-                    const stations = await res.json();
+                    if (stationsProfanum.length > 0) {
+                        const profanumStation = stationsProfanum.find(s => s.url_resolved || s.url);
+                        if (profanumStation) {
+                            streamProfanumUrl = tratarStreamUrl(profanumStation);
+                            document.getElementById('station-info').innerText = profanumStation.name;
+                            const audio = document.getElementById('audio-player');
+                            audio.src = streamProfanumUrl;
+                            
+                            // Tenta tocar direto (se o navegador permitir sem interação prévia)
+                            audio.play().catch(() => {
+                                console.log("Autoplay barrado pelo navegador. Tocará no primeiro clique na página.");
+                            });
+                        }
+                    }
+
+                    const [resGlobal, resBrasil] = await Promise.all([
+                        fetch(`${server}/json/stations/search?has_geo=true&limit=8000&hidebroken=true`),
+                        fetch(`${server}/json/stations/search?countrycode=BR&has_geo=true&limit=3000&hidebroken=true`)
+                    ]);
+
+                    if (!resGlobal.ok && !resBrasil.ok) continue;
+
+                    const stationsGlobal = resGlobal.ok ? await resGlobal.json() : [];
+                    const stationsBrasil = resBrasil.ok ? await resBrasil.json() : [];
+
+                    const mapStations = new Map();
+                    [...stationsBrasil, ...stationsGlobal].forEach(s => {
+                        if (s.stationuuid && !mapStations.has(s.stationuuid)) {
+                            mapStations.set(s.stationuuid, s);
+                        }
+                    });
+
+                    listaEstacoes = Array.from(mapStations.values());
                     const markerList = [];
 
-                    stations.forEach(station => {
+                    mapStations.forEach((station) => {
                         const lat = parseFloat(station.geo_lat);
                         const lng = parseFloat(station.geo_long);
 
@@ -133,23 +243,28 @@
                             const marker = L.marker([lat, lng], { icon: radioIcon });
                             
                             marker.on('click', () => {
-                                const streamUrl = station.url_resolved || station.url;
+                                const streamUrl = tratarStreamUrl(station);
                                 if (streamUrl) {
                                     document.getElementById('station-info').innerText = station.name;
                                     const audio = document.getElementById('audio-player');
                                     audio.src = streamUrl;
-                                    document.getElementById('player-bar').style.display = 'flex';
+                                    audio.play().catch(err => console.log("Erro ao reproduzir:", err));
+                                    
+                                    const encontrado = listaEstacoes.findIndex(s => s.stationuuid === station.stationuuid);
+                                    if (encontrado !== -1) indiceAtual = encontrado;
                                 }
                             });
 
-                            marker.bindTooltip(`<b>${station.name}</b><br>${station.country || ''}`, { direction: 'top' });
+                            marker.bindTooltip(`<b>${station.name}</b><br>${station.state || ''} - ${station.country || ''}`, { direction: 'top' });
                             markerList.push(marker);
                         }
                     });
 
-                    markers.addLayers(markerList);
-                    map.addLayer(markers);
-                    break;
+                    if (markerList.length > 0) {
+                        markers.addLayers(markerList);
+                        map.addLayer(markers);
+                        break;
+                    }
                 } catch (e) {
                     console.warn(`Tentando próximo servidor...`);
                 }
@@ -158,12 +273,5 @@
 
         loadRadios();
     </script>
-
-
 </body>
-
-
-  
 </html>
-
-
