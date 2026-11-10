@@ -96,18 +96,18 @@
 
     <div id="map"></div>
 
-    <!-- Botões de escolha de continente -->
+    <!-- Botões de escolha de continente com "GLOBAL" -->
     <div class="continent-selector">
-        <button class="continent-btn mundo" onclick="irPara(20, 0, 3)">🌐 Global</button>
+        <button class="continent-btn mundo" onclick="irPara(20, 0, 3)">🌐 GLOBAL</button>
         <button class="continent-btn" onclick="irPara(-23.7602, -45.4042, 6)">🌎 América do Sul</button>
         <button class="continent-btn" onclick="irPara(40.0, -100.0, 4)">🌎 América do Norte</button>
         <button class="continent-btn" onclick="irPara(50.0, 10.0, 4)">🌍 Europa</button>
         <button class="continent-btn" onclick="irPara(30.0, 100.0, 3)">🌏 Ásia e Oceania</button>
     </div>
 
-    <!-- Player Persistente com autoplay e muted inicial para burlar bloqueio de navegador -->
+    <!-- Player Persistente -->
     <div id="player-bar">
-        <span id="station-info">Carregando Band FM...</span>
+        <span id="station-info">Carregando Profanum MC...</span>
         <button class="station-nav-btn" onclick="mudarEstacao(-1)" title="Estação Anterior">◀</button>
         <button class="station-nav-btn" onclick="mudarEstacao(1)" title="Próxima Estação">▶</button>
         <audio id="audio-player" controls autoplay muted></audio>
@@ -165,7 +165,7 @@
             if (streamUrl) {
                 document.getElementById('station-info').innerText = station.name;
                 const audio = document.getElementById('audio-player');
-                audio.muted = false; // Garante som ao trocar manualmente
+                audio.muted = false;
                 audio.src = streamUrl;
                 audio.play().catch(err => console.log("Erro ao reproduzir:", err));
                 
@@ -186,18 +186,17 @@
         async function loadRadios() {
             for (let server of apiServers) {
                 try {
-                    const resBand = await fetch(`${server}/json/stations/search?name=band%20fm&limit=5&hidebroken=true`);
-                    const stationsBand = resBand.ok ? await resBand.json() : [];
+                    // Busca dedicada para a Rádio Profanum MC Mundial
+                    const resProfanum = await fetch(`${server}/json/stations/search?name=PROFANUM%20MC%20MUNDIAL&limit=5&hidebroken=true`);
+                    const stationsProfanum = resProfanum.ok ? await resProfanum.json() : [];
                     
-                    if (stationsBand.length > 0) {
-                        const bandStation = stationsBand.find(s => s.url_resolved || s.url);
-                        if (bandStation) {
-                            const streamUrl = tratarStreamUrl(bandStation);
-                            document.getElementById('station-info').innerText = bandStation.name;
+                    if (stationsProfanum.length > 0) {
+                        const profanumStation = stationsProfanum.find(s => s.url_resolved || s.url);
+                        if (profanumStation) {
+                            const streamUrl = tratarStreamUrl(profanumStation);
+                            document.getElementById('station-info').innerText = profanumStation.name;
                             const audio = document.getElementById('audio-player');
                             audio.src = streamUrl;
-                            
-                            // Tenta tirar o mudo após iniciar a reprodução com sucesso
                             audio.play().then(() => {
                                 setTimeout(() => { audio.muted = false; }, 1000);
                             }).catch(err => console.log("Autoplay bloqueado:", err));
