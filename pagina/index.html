@@ -35,10 +35,9 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
     <script>
-        // Centraliza cravado em São Sebastião, SP, mantendo o mundo liberado ao dar zoom out
         const map = L.map('map', { 
             center: [-23.7602, -45.4042], 
             zoom: 10, 
@@ -78,9 +77,10 @@
         async function loadRadios() {
             for (let server of apiServers) {
                 try {
+                    // Removido o filtro has_geo do Brasil para puxar todas as rádios sem coordenada
                     const [resGlobal, resBrasil] = await Promise.all([
-                        fetch(`${server}/json/stations/search?has_geo=true&limit=6000&hidebroken=true`),
-                        fetch(`${server}/json/stations/search?countrycode=BR&has_geo=true&limit=3000&hidebroken=true`)
+                        fetch(`${server}/json/stations/search?has_geo=true&limit=4000&hidebroken=true`),
+                        fetch(`${server}/json/stations/search?countrycode=BR&limit=2000&hidebroken=true`)
                     ]);
 
                     if (!resGlobal.ok && !resBrasil.ok) continue;
@@ -115,9 +115,11 @@
                             baseCoord = litoralCoords['ubatuba'];
                         }
 
-                        if (baseCoord && (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0)) {
-                            lat = baseCoord[0] + (Math.random() - 0.5) * 0.02;
-                            lng = baseCoord[1] + (Math.random() - 0.5) * 0.02;
+                        // Se é rádio do litoral ou de SP e veio sem Lat/Lng, força uma coordenada em terra firme perto de São Sebastião
+                        if (baseCoord || (cidade.includes('são paulo') && (isNaN(lat) || isNaN(lng) || lat === 0))) {
+                            const ref = baseCoord || litoralCoords['são sebastião'];
+                            lat = ref[0] + (Math.random() - 0.5) * 0.05;
+                            lng = ref[1] + (Math.random() - 0.5) * 0.05;
                         }
 
                         if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
