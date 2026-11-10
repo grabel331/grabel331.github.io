@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rádios - São Sebastião e Litoral</title>
+    <title>Rádio Global & Litoral</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
@@ -38,10 +38,19 @@
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.js"></script>
 
     <script>
-        const map = L.map('map', { center: [-23.7602, -45.4042], zoom: 11 });
+        // Trava os limites do mapa global sem clonar as telas nas laterais
+        const map = L.map('map', { 
+            center: [20, 0], 
+            zoom: 3, 
+            minZoom: 2,
+            maxBounds: [[-90, -180], [90, 180]],
+            maxBoundsViscosity: 1.0
+        });
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
+            noWrap: true,
+            bounds: [[-90, -180], [90, 180]],
             attribution: '&copy; OpenStreetMap'
         }).addTo(map);
 
@@ -49,11 +58,11 @@
 
         const radioIcon = L.divIcon({
             className: 'custom-radio-icon',
-            html: `<div style="width:14px; height:14px; background:#10b981; border:2px solid #fff; border-radius:50%; box-shadow:0 0 10px #10b981;"></div>`,
-            iconSize: [14, 14]
+            html: `<div style="width:12px; height:12px; background:#10b981; border:2px solid #fff; border-radius:50%; box-shadow:0 0 8px #10b981;"></div>`,
+            iconSize: [12, 12]
         });
 
-        const regiaoCoords = {
+        const litoralCoords = {
             'são sebastião': [-23.7602, -45.4042],
             'ilhabela': [-23.7781, -45.3581],
             'caraguatatuba': [-23.6261, -45.4142],
@@ -66,52 +75,67 @@
             'https://nl1.api.radio-browser.info'
         ];
 
-        async function carregar() {
+        async function carregarRadios() {
             for (let server of apiServers) {
                 try {
-                    const res = await fetch(`${server}/json/stations/search?state=são%20paulo&limit=3000&hidebroken=true`);
-                    if (!res.ok) continue;
+                    // Requisições corrigidas com parâmetros estritos e seguros para o Brasil e Mundo
+                    const [resGlobal, resBrasil] = await Promise.all([
+                        fetch(`${server}/json/stations/search?has_geo=true&limit=4000&hidebroken=true`),
+                        fetch(`${server}/json/stations/search?countrycode=BR&has_geo=true&limit=3000&hidebroken=true`)
+                    ]);
 
-                    const stations = await res.json();
+                    if (!resGlobal.ok && !resBrasil.ok) continue;
+
+                    const stationsGlobal = resGlobal.ok ? await resGlobal.json() : [];
+                    const stationsBrasil = resBrasil.ok ? await resBrasil.json() : [];
+
+                    const mapStations = new Map();
+                    [...stationsBrasil, ...stationsGlobal].forEach(s => {
+                        if (s.stationuuid && !mapStations.has(s.stationuuid)) {
+                            mapStations.set(s.stationuuid, s);
+                        }
+                    });
+
                     const markerList = [];
 
-                    stations.forEach(station => {
-                        const cidade = (station.city || '').toLowerCase().trim();
-                        const nome = (station.name || '').toLowerCase();
+                    mapStations.forEach(station => {
                         let lat = parseFloat(station.geo_lat);
                         let lng = parseFloat(station.geo_long);
+                        
+                        const cidade = (station.city || '').toLowerCase().trim();
+                        const nome = (station.name || '').toLowerCase();
 
                         let baseCoord = null;
                         if (cidade.includes('sebastião') || nome.includes('são sebastião') || nome.includes('litoral norte')) {
-                            baseCoord = regiaoCoords['são sebastião'];
+                            baseCoord = litoralCoords['são sebastião'];
                         } else if (cidade.includes('ilhabela') || nome.includes('ilhabela')) {
-                            baseCoord = regiaoCoords['ilhabela'];
+                            baseCoord = litoralCoords['ilhabela'];
                         } else if (cidade.includes('caraguá') || nome.includes('caraguá')) {
-                            baseCoord = regiaoCoords['caraguatatuba'];
+                            baseCoord = litoralCoords['caraguatatuba'];
                         } else if (cidade.includes('ubatuba') || nome.includes('ubatuba')) {
-                            baseCoord = regiaoCoords['ubatuba'];
+                            baseCoord = litoralCoords['ubatuba'];
                         }
 
-                        // Se encontrou a rádio da região mas ela veio sem coordenadas na API, atribui a coordenada fixa com leve variação
-                        if (baseCoord && (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0))) {
+                        // Força coordenadas seguras no litoral caso venham zeradas ou vazias
+                        if (baseCoord && (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0)) {
                             lat = baseCoord[0] + (Math.random() - 0.5) * 0.02;
                             lng = baseCoord[1] + (Math.random() - 0.5) * 0.02;
                         }
 
                         if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
                             const marker = L.marker([lat, lng], { icon: radioIcon });
-
+                            
                             marker.on('click', () => {
-                                const url = station.url_resolved || station.url;
-                                if (url) {
+                                const streamUrl = station.url_resolved || station.url;
+                                if (streamUrl) {
                                     document.getElementById('station-info').innerText = station.name;
                                     const audio = document.getElementById('audio-player');
-                                    audio.src = url;
+                                    audio.src = streamUrl;
                                     document.getElementById('player-bar').style.display = 'flex';
                                 }
                             });
 
-                            marker.bindTooltip(`<b>${station.name}</b><br>${station.city || 'São Sebastião'}`, { direction: 'top' });
+                            marker.bindTooltip(`<b>${station.name}</b><br>${station.city || station.state || station.country || ''}`, { direction: 'top' });
                             markerList.push(marker);
                         }
                     });
@@ -121,13 +145,13 @@
                         map.addLayer(markers);
                         break;
                     }
-                } catch (err) {
+                } catch (e) {
                     console.warn("Tentando próximo servidor...");
                 }
             }
         }
 
-        carregar();
+        carregarRadios();
     </script>
 </body>
 </html>
