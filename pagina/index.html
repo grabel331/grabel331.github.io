@@ -42,10 +42,17 @@
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
     <script>
+<<<<<<< HEAD
         // 1. AJUSTE DO MAPA: Centraliza em São Sebastião e limita o mundo a 1 tela só (sem repetir)
         const map = L.map('map', { 
             center: [-23.7602, -45.4042], 
             zoom: 9, 
+=======
+        // Trava os limites do mapa global sem clonar as telas nas laterais
+        const map = L.map('map', { 
+            center: [20, 0], 
+            zoom: 3, 
+>>>>>>> 7eae1a088d678141e1395f28c4e3b1e39ebcd3e9
             minZoom: 2,
             maxBounds: [[-90, -180], [90, 180]],
             maxBoundsViscosity: 1.0
@@ -77,17 +84,59 @@
         async function loadRadios() {
             for (let server of apiServers) {
                 try {
+<<<<<<< HEAD
                     const res = await fetch(`${server}/json/stations/search?has_geo=true&limit=6000`);
                     if (!res.ok) continue;
                     
                     const stations = await res.json();
+=======
+                    // Requisições corrigidas com parâmetros estritos e seguros para o Brasil e Mundo
+                    const [resGlobal, resBrasil] = await Promise.all([
+                        fetch(`${server}/json/stations/search?has_geo=true&limit=4000&hidebroken=true`),
+                        fetch(`${server}/json/stations/search?countrycode=BR&has_geo=true&limit=3000&hidebroken=true`)
+                    ]);
+
+                    if (!resGlobal.ok && !resBrasil.ok) continue;
+
+                    const stationsGlobal = resGlobal.ok ? await resGlobal.json() : [];
+                    const stationsBrasil = resBrasil.ok ? await resBrasil.json() : [];
+
+                    const mapStations = new Map();
+                    [...stationsBrasil, ...stationsGlobal].forEach(s => {
+                        if (s.stationuuid && !mapStations.has(s.stationuuid)) {
+                            mapStations.set(s.stationuuid, s);
+                        }
+                    });
+
+>>>>>>> 7eae1a088d678141e1395f28c4e3b1e39ebcd3e9
                     const markerList = [];
 
                     stations.forEach(station => {
                         const lat = parseFloat(station.geo_lat);
                         const lng = parseFloat(station.geo_long);
 
+<<<<<<< HEAD
                         if (!isNaN(lat) && !isNaN(lng)) {
+=======
+                        let baseCoord = null;
+                        if (cidade.includes('sebastião') || nome.includes('são sebastião') || nome.includes('litoral norte')) {
+                            baseCoord = litoralCoords['são sebastião'];
+                        } else if (cidade.includes('ilhabela') || nome.includes('ilhabela')) {
+                            baseCoord = litoralCoords['ilhabela'];
+                        } else if (cidade.includes('caraguá') || nome.includes('caraguá')) {
+                            baseCoord = litoralCoords['caraguatatuba'];
+                        } else if (cidade.includes('ubatuba') || nome.includes('ubatuba')) {
+                            baseCoord = litoralCoords['ubatuba'];
+                        }
+
+                        // Força coordenadas seguras no litoral caso venham zeradas ou vazias
+                        if (baseCoord && (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0)) {
+                            lat = baseCoord[0] + (Math.random() - 0.5) * 0.02;
+                            lng = baseCoord[1] + (Math.random() - 0.5) * 0.02;
+                        }
+
+                        if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+>>>>>>> 7eae1a088d678141e1395f28c4e3b1e39ebcd3e9
                             const marker = L.marker([lat, lng], { icon: radioIcon });
                             
                             marker.on('click', () => {
