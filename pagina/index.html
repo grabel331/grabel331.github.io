@@ -3,25 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rádio Global & Litoral</title>
+    <title>Rádio Global</title>
     
+    <!-- CSS do Leaflet e dos Clusters -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { width: 100%; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; background: #0b0f19; }
+        body, html { width: 100%; height: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; background: #111; }
+        
         #map { width: 100vw; height: 100vh; }
 
+        /* Player Flutuante Minimalista */
         #player-bar {
-            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.95); color: #fff; padding: 12px 22px;
-            border-radius: 40px; display: none; align-items: center; gap: 15px;
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95); color: #fff; padding: 10px 18px;
+            border-radius: 40px; display: none; align-items: center; gap: 12px;
             z-index: 1000; border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7); backdrop-filter: blur(8px);
         }
-        #station-info { font-size: 13px; font-weight: 600; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #10b981; }
+        #station-info { font-size: 13px; font-weight: 600; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #10b981; }
         audio { height: 32px; outline: none; }
     </style>
 </head>
@@ -34,13 +37,15 @@
         <audio id="audio-player" controls autoplay></audio>
     </div>
 
+    <!-- Scripts do Leaflet -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
     <script>
+        // 1. AJUSTE DO MAPA: Centraliza em São Sebastião e limita o mundo a 1 tela só (sem repetir)
         const map = L.map('map', { 
             center: [-23.7602, -45.4042], 
-            zoom: 10, 
+            zoom: 9, 
             minZoom: 2,
             maxBounds: [[-90, -180], [90, 180]],
             maxBoundsViscosity: 1.0
@@ -53,7 +58,7 @@
             attribution: '&copy; OpenStreetMap'
         }).addTo(map);
 
-        const markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40 });
+        const markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 45 });
 
         const radioIcon = L.divIcon({
             className: 'custom-radio-icon',
@@ -61,68 +66,28 @@
             iconSize: [12, 12]
         });
 
-        const litoralCoords = {
-            'são sebastião': [-23.7602, -45.4042],
-            'ilhabela': [-23.7781, -45.3581],
-            'caraguatatuba': [-23.6261, -45.4142],
-            'ubatuba': [-23.4338, -45.0837]
-        };
-
+        // Servidores públicos livres da Radio-Browser
         const apiServers = [
             'https://all.api.radio-browser.info',
             'https://de1.api.radio-browser.info',
             'https://nl1.api.radio-browser.info'
         ];
 
+        // 2. EXATAMENTE O MESMO CÓDIGO DE CARREGAMENTO DO SEU CÓDIGO ORIGINAL QUE FUNCIONA
         async function loadRadios() {
             for (let server of apiServers) {
                 try {
-                    // Removido o filtro has_geo do Brasil para puxar todas as rádios sem coordenada
-                    const [resGlobal, resBrasil] = await Promise.all([
-                        fetch(`${server}/json/stations/search?has_geo=true&limit=4000&hidebroken=true`),
-                        fetch(`${server}/json/stations/search?countrycode=BR&limit=2000&hidebroken=true`)
-                    ]);
-
-                    if (!resGlobal.ok && !resBrasil.ok) continue;
-
-                    const stationsGlobal = resGlobal.ok ? await resGlobal.json() : [];
-                    const stationsBrasil = resBrasil.ok ? await resBrasil.json() : [];
-
-                    const mapStations = new Map();
-                    [...stationsBrasil, ...stationsGlobal].forEach(s => {
-                        if (s.stationuuid && !mapStations.has(s.stationuuid)) {
-                            mapStations.set(s.stationuuid, s);
-                        }
-                    });
-
+                    const res = await fetch(`${server}/json/stations/search?has_geo=true&limit=6000`);
+                    if (!res.ok) continue;
+                    
+                    const stations = await res.json();
                     const markerList = [];
 
-                    mapStations.forEach(station => {
-                        let lat = parseFloat(station.geo_lat);
-                        let lng = parseFloat(station.geo_long);
-                        
-                        const cidade = (station.city || '').toLowerCase().trim();
-                        const nome = (station.name || '').toLowerCase();
+                    stations.forEach(station => {
+                        const lat = parseFloat(station.geo_lat);
+                        const lng = parseFloat(station.geo_long);
 
-                        let baseCoord = null;
-                        if (cidade.includes('sebastião') || nome.includes('são sebastião') || nome.includes('litoral norte')) {
-                            baseCoord = litoralCoords['são sebastião'];
-                        } else if (cidade.includes('ilhabela') || nome.includes('ilhabela')) {
-                            baseCoord = litoralCoords['ilhabela'];
-                        } else if (cidade.includes('caraguá') || nome.includes('caraguá')) {
-                            baseCoord = litoralCoords['caraguatatuba'];
-                        } else if (cidade.includes('ubatuba') || nome.includes('ubatuba')) {
-                            baseCoord = litoralCoords['ubatuba'];
-                        }
-
-                        // Se é rádio do litoral ou de SP e veio sem Lat/Lng, força uma coordenada em terra firme perto de São Sebastião
-                        if (baseCoord || (cidade.includes('são paulo') && (isNaN(lat) || isNaN(lng) || lat === 0))) {
-                            const ref = baseCoord || litoralCoords['são sebastião'];
-                            lat = ref[0] + (Math.random() - 0.5) * 0.05;
-                            lng = ref[1] + (Math.random() - 0.5) * 0.05;
-                        }
-
-                        if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+                        if (!isNaN(lat) && !isNaN(lng)) {
                             const marker = L.marker([lat, lng], { icon: radioIcon });
                             
                             marker.on('click', () => {
@@ -135,18 +100,16 @@
                                 }
                             });
 
-                            marker.bindTooltip(`<b>${station.name}</b><br>${station.city || station.state || station.country || ''}`, { direction: 'top' });
+                            marker.bindTooltip(`<b>${station.name}</b><br>${station.country || ''}`, { direction: 'top' });
                             markerList.push(marker);
                         }
                     });
 
-                    if (markerList.length > 0) {
-                        markers.addLayers(markerList);
-                        map.addLayer(markers);
-                        break;
-                    }
+                    markers.addLayers(markerList);
+                    map.addLayer(markers);
+                    break;
                 } catch (e) {
-                    console.warn("Tentando próximo servidor...");
+                    console.warn(`Tentando próximo servidor...`);
                 }
             }
         }
