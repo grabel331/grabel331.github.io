@@ -50,7 +50,7 @@
 
         audio { height: 28px; max-width: 140px; outline: none; }
 
-        /* Menu de Continentes e Localização Responsivo */
+        /* Menu de Continentes Responsivo para Celular */
         .continent-selector {
             position: fixed;
             top: 80px;
@@ -93,15 +93,6 @@
             background: #059669;
         }
 
-        .continent-btn.localizar {
-            background: #0284c7;
-            border-color: #0ea5e9;
-        }
-
-        .continent-btn.localizar:hover {
-            background: #0ea5e9;
-        }
-
         /* Ajustes específicos para telas muito pequenas (Celulares) */
         @media (max-width: 480px) {
             #player-bar {
@@ -131,10 +122,9 @@
 
     <div id="map"></div>
 
-    <!-- Botões de escolha de continente e geolocalização -->
+    <!-- Botões de escolha de continente -->
     <div class="continent-selector">
         <button class="continent-btn mundo" onclick="irPara(20, 0, 3)">🌐 GLOBAL</button>
-        <button class="continent-btn localizar" onclick="meuLocal()">📍 ME LOCALIZAR</button>
         <button class="continent-btn" onclick="irPara(-23.7602, -45.4042, 6)">🌎 América do Sul</button>
         <button class="continent-btn" onclick="irPara(40.0, -100.0, 4)">🌎 América do Norte</button>
         <button class="continent-btn" onclick="irPara(50.0, 10.0, 4)">🌍 Europa</button>
@@ -150,7 +140,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
     <script>
         const map = L.map('map', { 
@@ -178,25 +168,6 @@
 
         function irPara(lat, lng, zoom) {
             map.flyTo([lat, lng], zoom, { duration: 1.5 });
-        }
-
-        // Função para obter a localização atual do usuário e mover o mapa
-        function meuLocal() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        map.flyTo([lat, lng], 12, { duration: 1.5 });
-                    },
-                    (error) => {
-                        alert("Não foi possível obter sua localização. Verifique as permissões do navegador.");
-                    },
-                    { timeout: 10000 }
-                );
-            } else {
-                alert("Seu navegador não suporta geolocalização.");
-            }
         }
 
         let listaEstacoes = [];
@@ -238,6 +209,7 @@
             if (streamProfanumUrl && audio.paused) {
                 audio.src = streamProfanumUrl;
                 audio.play().catch(() => {
+                    // Se o navegador barrar o autoplay puro, configura o gatilho universal de primeiro toque
                     const ativarSom = () => {
                         audio.play();
                         window.removeEventListener('pointerdown', ativarSom);
