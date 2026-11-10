@@ -105,16 +105,16 @@
         <button class="continent-btn" onclick="irPara(30.0, 100.0, 3)">🌏 Ásia e Oceania</button>
     </div>
 
-    <!-- Player Persistente com Autoplay Ativo -->
+    <!-- Player Persistente com autoplay e muted inicial para burlar bloqueio de navegador -->
     <div id="player-bar">
         <span id="station-info">Carregando Band FM...</span>
         <button class="station-nav-btn" onclick="mudarEstacao(-1)" title="Estação Anterior">◀</button>
         <button class="station-nav-btn" onclick="mudarEstacao(1)" title="Próxima Estação">▶</button>
-        <audio id="audio-player" controls autoplay></audio>
+        <audio id="audio-player" controls autoplay muted></audio>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
     <script>
         const map = L.map('map', { 
@@ -147,7 +147,6 @@
         let listaEstacoes = [];
         let indiceAtual = 0;
 
-        // Função para corrigir links HTTP em ambiente HTTPS (evita bloqueio de Mixed Content)
         function tratarStreamUrl(station) {
             let rawUrl = station.url_resolved || station.url;
             if (!rawUrl) return '';
@@ -166,6 +165,7 @@
             if (streamUrl) {
                 document.getElementById('station-info').innerText = station.name;
                 const audio = document.getElementById('audio-player');
+                audio.muted = false; // Garante som ao trocar manualmente
                 audio.src = streamUrl;
                 audio.play().catch(err => console.log("Erro ao reproduzir:", err));
                 
@@ -196,7 +196,11 @@
                             document.getElementById('station-info').innerText = bandStation.name;
                             const audio = document.getElementById('audio-player');
                             audio.src = streamUrl;
-                            audio.play().catch(err => console.log("Autoplay bloqueado pelo navegador:", err));
+                            
+                            // Tenta tirar o mudo após iniciar a reprodução com sucesso
+                            audio.play().then(() => {
+                                setTimeout(() => { audio.muted = false; }, 1000);
+                            }).catch(err => console.log("Autoplay bloqueado:", err));
                         }
                     }
 
@@ -232,6 +236,7 @@
                                 if (streamUrl) {
                                     document.getElementById('station-info').innerText = station.name;
                                     const audio = document.getElementById('audio-player');
+                                    audio.muted = false;
                                     audio.src = streamUrl;
                                     audio.play().catch(err => console.log("Erro ao reproduzir:", err));
                                     
