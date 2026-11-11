@@ -123,7 +123,7 @@
     </style>
 </head>
 <body>
-
+x
     <div id="map"></div>
 
 
@@ -148,21 +148,7 @@
         <button class="continent-btn" onclick="irPara(40.0, -100.0, 4)">🌎 América do Norte</button>
         <button class="continent-btn" onclick="irPara(50.0, 10.0, 4)">🌍 Europa</button>
         <button class="continent-btn" onclick="irPara(30.0, 100.0, 3)">🌏 Ásia e Oceania</button>
-                <!-- Cole isto logo abaixo do botão GLOBAL existente -->
-<div id="contador-visitas" style="font-size: 11px; color: #e2e8f0; text-align: center; margin-top: 4px; font-weight: 500; background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">
-  👁️ Visitas: <span id="numero-total">...</span>
-</div>
-
-<script>
-  fetch('https://api.countapi.xyz/hit/radioglobal-gabrielpereira/visitas-totais')
-    .then(response => response.json())
-    .then(data => {
-      document.getElementById('numero-total').textContent = data.value.toLocaleString('pt-BR');
-    })
-    .catch(() => {
-      document.getElementById('numero-total').textContent = "-";
-    });
-</script>
+               
     </div>
 
     <!-- Player Persistente -->
