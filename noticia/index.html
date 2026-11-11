@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Litoral Norte</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Estilo do Menu Superior */
+    .menu-bar {
+      width: 100%;
+      background-color: #0b2545;
+      padding: 8px 12px;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .menu-bar::-webkit-scrollbar {
+      height: 4px;
+    }
+    .menu-bar::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.3);
+      border-radius: 4px;
+    }
+
+    .menu-bar ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    .menu-bar ul li a {
+      color: #ffffff;
+      text-decoration: none;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 5px 8px;
+      border-radius: 3px;
+      display: inline-block;
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+      transition: background-color 0.2s, opacity 0.2s;
+    }
+
+    .menu-bar ul li a:hover {
+      background-color: #134074;
+      opacity: 0.9;
+    }
+
+    /* Iframe ocupando o restante da tela */
+    iframe {
+      width: 100%;
+      flex-grow: 1;
+      border: none;
+      background-color: #f4f4f4;
+    }
+
+    /* Ajustes extras para telas de celular */
+    @media (max-width: 768px) {
+      .menu-bar {
+        padding: 6px 8px;
+      }
+      .menu-bar ul {
+        gap: 6px;
+      }
+      .menu-bar ul li a {
+        font-size: 11px;
+        padding: 4px 6px;
+        max-width: 110px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Menu de Navegação -->
+  <nav class="menu-bar">
+    <ul>
+      <!-- Botão Início apontando para o seu domínio externo -->
+      <li><a href="https://gabrielpereira.net.eu.org" target="_self" style="background-color: #134074;">🏠 Início</a></li>
+
+      <!-- Prefeituras no Início -->
+      <li><a onclick="mudarSite('https://www.saosebastiao.sp.gov.br')">Pref. São Sebastião</a></li>
+      <li><a onclick="mudarSite('https://www.ilhabela.sp.gov.br')">Pref. Ilhabela</a></li>
+      <li><a onclick="mudarSite('https://www.caraguatatuba.sp.gov.br')">Pref. Caraguatatuba</a></li>
+      
+      <!-- Sites de Notícias -->
+      <li><a onclick="mudarSite('https://radarlitoral.com.br')">Radar Litoral</a></li>
+      <li><a onclick="mudarSite('https://www.tamoiosnews.com.br')">Tamoios News</a></li>
+      <li><a onclick="mudarSite('https://g1.globo.com/sp/vale-do-paraiba-regiao/')">G1 Litoral Norte</a></li>
+      <li><a onclick="mudarSite('https://noticias.r7.com/')">Record / R7</a></li>
+      <li><a onclick="mudarSite('https://rota55.com.br')">Rota 55</a></li>
+      <li><a onclick="mudarSite('https://portalnoticiasdolitoral.com.br')">Portal Notícias do Litoral</a></li>
+      <li><a onclick="mudarSite('https://ig.com.br')">iG Litoral Norte</a></li>
+    </ul>
+  </nav>
+
+  <!-- Iframe (Inicia com a tela de escolha/home) -->
+  <iframe id="meuIframe" name="meuIframe" src="about:blank" allowfullscreen></iframe>
+
+  <!-- Script para gerenciar a troca de sites e a tela inicial em formato de painel -->
+  <script>
+    function carregarHomeNoIframe() {
+      const iframeDoc = document.getElementById('meuIframe').contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body {
+              font-family: 'Segoe UI', Arial, sans-serif;
+              background-color: #0b2545;
+              color: white;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              margin: 0;
+              text-align: center;
+              padding: 20px;
+            }
+            h1 { font-size: 24px; margin-bottom: 8px; }
+            p { font-size: 14px; color: #cbd5e1; margin-bottom: 20px; }
+            .grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+              gap: 12px;
+              width: 100%;
+              max-width: 750px;
+            }
+            button {
+              background-color: #134074;
+              color: white;
+              border: 1px solid rgba(255,255,255,0.2);
+              padding: 10px 14px;
+              font-size: 13px;
+              font-weight: bold;
+              border-radius: 6px;
+              cursor: pointer;
+              transition: background 0.2s, transform 0.1s;
+            }
+            button:hover {
+              background-color: #1d5b9e;
+              transform: translateY(-2px);
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Portal Litoral Norte</h1>
+          <p>Selecione abaixo o site ou prefeitura que deseja visualizar:</p>
+          <div class="grid">
+            <button onclick="parent.mudarSite('https://www.saosebastiao.sp.gov.br')">Pref. São Sebastião</button>
+            <button onclick="parent.mudarSite('https://www.ilhabela.sp.gov.br')">Pref. Ilhabela</button>
+            <button onclick="parent.mudarSite('https://www.caraguatatuba.sp.gov.br')">Pref. Caraguatatuba</button>
+            <button onclick="parent.mudarSite('https://radarlitoral.com.br')">Radar Litoral</button>
+            <button onclick="parent.mudarSite('https://www.tamoiosnews.com.br')">Tamoios News</button>
+            <button onclick="parent.mudarSite('https://g1.globo.com/sp/vale-do-paraiba-regiao/')">G1 Litoral Norte</button>
+            <button onclick="parent.mudarSite('https://noticias.r7.com/')">Record / R7</button>
+            <button onclick="parent.mudarSite('https://rota55.com.br')">Rota 55</button>
+            <button onclick="parent.mudarSite('https://portalnoticiasdolitoral.com.br')">Portal Notícias do Litoral</button>
+            <button onclick="parent.mudarSite('https://ig.com.br')">iG Litoral Norte</button>
+          </div>
+        </body>
+        </html>
+      `);
+      iframeDoc.close();
+    }
+
+    function mudarSite(url) {
+      document.getElementById('meuIframe').src = url;
+    }
+
+    // Carrega a tela inicial preenchida assim que a página abrir
+    window.onload = function() {
+      carregarHomeNoIframe();
+    };
+  </script>
+
+</body>
+</html>
