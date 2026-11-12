@@ -3,172 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Litoral Norte SP - Clima & Ventos 3D</title>
+    <title>Litoral Norte SP - Radar Integrado</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
         }
 
-        body {
-            background-color: #0f172a;
-            color: #f8fafc;
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+            color: #fff;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
         }
 
         header {
-            background-color: #1e293b;
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #334155;
-        }
-
-        header h1 {
-            font-size: 1.2rem;
-            color: #38bdf8;
-        }
-
-        .main-container {
-            display: flex;
-            flex: 1;
-            position: relative;
-            height: calc(100vh - 55px);
-        }
-
-        /* Barra de menu lateral customizada para controlar as camadas do Windy */
-        .custom-controls {
-            width: 240px;
-            background-color: #1e293b;
-            padding: 15px;
+            width: 100%;
+            height: 110px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            border-right: 1px solid #334155;
-            z-index: 10;
+            justify-content: space-between;
+            z-index: 1000;
         }
 
-        .custom-controls h3 {
-            font-size: 0.95rem;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-        }
-
-        .layer-btn {
-            background-color: #334155;
-            color: #f8fafc;
-            border: none;
-            padding: 10px 14px;
-            border-radius: 6px;
-            text-align: left;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background 0.2s, color 0.2s;
+        .header-title {
             display: flex;
             align-items: center;
-            gap: 8px;
-            text-decoration: none;
+            justify-content: space-between;
         }
 
-        .layer-btn:hover {
-            background-color: #475569;
+        .header-title h1 {
+            font-size: 0.9rem;
+            font-weight: 700;
             color: #38bdf8;
+            text-transform: uppercase;
         }
 
-        .layer-btn.active {
-            background-color: #0284c7;
-            color: #fff;
+        .cities-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .city-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .city-info h2 {
+            font-size: 0.8rem;
             font-weight: 600;
         }
 
-        .external-link {
-            margin-top: auto;
-            background-color: #0f172a;
-            border: 1px solid #334155;
-            text-align: center;
+        .city-info p {
+            font-size: 0.65rem;
+            color: #94a3b8;
         }
 
-        /* Área do Iframe do Windy */
-        .map-wrapper {
+        .city-temp {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fbbf24;
+        }
+
+        main {
             flex: 1;
+            width: 100%;
             position: relative;
-            height: 100%;
         }
 
-        iframe {
+        #map {
             width: 100%;
             height: 100%;
-            border: none;
+            background: #0b0f19;
+        }
+
+        .leaflet-control-layers {
+            background: #1e293b !important;
+            color: #fff !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 8px !important;
+            padding: 6px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+        }
+
+        .leaflet-control-layers label {
+            font-size: 0.8rem !important;
+            color: #e2e8f0 !important;
+            cursor: pointer;
+            margin-bottom: 4px;
+        }
+
+        .leaflet-control-layers-separator {
+            border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Litoral Norte SP - Clima & Ventos</h1>
-        <span style="font-size: 0.85rem; color: #94a3b8;">São Sebastião / Caraguatatuba</span>
+        <div class="header-title">
+            <h1><i class="fa-solid fa-location-crosshairs"></i> Litoral Norte SP — Radar Nativo com Menu</h1>
+            <span><i class="fa-solid fa-layer-group"></i> Camadas Ativas</span>
+        </div>
+
+        <div class="cities-bar">
+            <div class="city-card">
+                <div class="city-info">
+                    <h2>São Sebastião</h2>
+                    <p id="seba-cond">Carregando...</p>
+                </div>
+                <div class="city-temp"><i class="fa-solid fa-sun" id="seba-icon"></i><span id="seba-temp">--°C</span></div>
+            </div>
+            <div class="city-card">
+                <div class="city-info">
+                    <h2>Caraguatatuba</h2>
+                    <p id="caragua-cond">Carregando...</p>
+                </div>
+                <div class="city-temp"><i class="fa-solid fa-cloud-sun" id="caragua-icon"></i><span id="caragua-temp">--°C</span></div>
+            </div>
+            <div class="city-card">
+                <div class="city-info">
+                    <h2>Ilhabela</h2>
+                    <p id="ilhabela-cond">Carregando...</p>
+                </div>
+                <div class="city-temp"><i class="fa-solid fa-sun" id="ilhabela-icon"></i><span id="ilhabela-temp">--°C</span></div>
+            </div>
+        </div>
     </header>
 
-    <div class="main-container">
-        <!-- Menu Lateral com Atalhos para Camadas -->
-        <div class="custom-controls">
-            <h3>Camadas de Vento</h3>
-            <!-- O parâmetro 'metricWind=km/h' ajusta a unidade para km/h -->
-            <button class="layer-btn active" onclick="mudarCamada('wind', this)">💨 Vento & Rajadas</button>
-            <button class="layer-btn" onclick="mudarCamada('rain', this)">🌧️ Chuva & Trovoadas</button>
-            <button class="layer-btn" onclick="mudarCamada('temp', this)">🌡️ Temperatura</button>
-            <button class="layer-btn" onclick="mudarCamada('pressure', this)">📊 Pressão Atmosférica</button>
-            <button class="layer-btn" onclick="mudarCamada('waves', this)">🌊 Ondas (Mar)</button>
+    <main>
+        <div id="map"></div>
+    </main>
 
-            <a href="https://www.windy.com/-23.761/-45.410?-23.761,-45.410,11" target="_blank" class="layer-btn external-link">
-                🌐 Abrir Windy Completo ↗
-            </a>
-        </div>
-
-        <!-- Visualizador do Mapa -->
-        <div class="map-wrapper">
-            <iframe id="windy-iframe" src="https://embed.windy.com/embed2.html?lat=-23.761&lon=-45.410&detailLat=-23.761&detailLon=-45.410&width=650&height=450&zoom=11&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=true&type=map&location=coordinates&detail=true&metricWind=km/h&metricTemp=°C&radarRange=-1" title="Windy Map"></iframe>
-        </div>
-    </div>
-
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        function mudarCamada(overlayType, elementoBtn) {
-            // Remove a classe ativa de todos os botões e adiciona no clicado
-            document.querySelectorAll('.layer-btn').forEach(btn => btn.classList.remove('active'));
-            if(elementoBtn) elementoBtn.classList.add('active');
+        const map = L.map('map', { zoomControl: false }).setView([-23.76, -45.41], 10);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-            // Atualiza o link src do iframe preservando as coordenadas de São Sebastião (-23.761, -45.410)
-            const iframe = document.getElementById('windy-iframe');
-            const baseUrl = "https://embed.windy.com/embed2.html?";
-            const params = new URLSearchParams({
-                lat: "-23.761",
-                lon: "-45.410",
-                detailLat: "-23.761",
-                detailLon: "-45.410",
-                width: "650",
-                height: "450",
-                zoom: "11",
-                level: "surface",
-                overlay: overlayType,
-                product: "ecmwf",
-                metricWind: "km/h",
-                metricTemp: "°C",
-                pressure: "true",
-                type: "map",
-                location: "coordinates",
-                detail: "true"
-            });
+        const baseLayers = {
+            "Escuro (CartoDB Dark)": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap & CartoDB', maxZoom: 19
+            }).addTo(map),
+            "Satélite (Esri World Imagery)": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '&copy; Esri', maxZoom: 19
+            }),
+            "Mapa Padrão (OpenStreetMap)": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap', maxZoom: 19
+            })
+        };
 
-            iframe.src = baseUrl + params.toString();
+        const overlayLayers = {
+            "Chuva / Radar (RainViewer)": L.tileLayer('https://tile.rainviewer.com/v2/radar/nowcast_120/{z}/{x}/{y}/2/1_1.png', {
+                opacity: 0.7, attribution: 'RainViewer', maxZoom: 19
+            }).addTo(map),
+            "Nuvens & Satélite Global": L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2026-01-01/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg', {
+                opacity: 0.5, attribution: 'NASA GIBS', maxZoom: 9
+            })
+        };
+
+        L.control.layers(baseLayers, overlayLayers, { position: 'topright', collapsed: false }).addTo(map);
+
+        L.marker([-23.76, -45.41]).addTo(map).bindPopup("<b>São Sebastião</b>").openPopup();
+        L.marker([-23.62, -45.41]).addTo(map).bindPopup("<b>Caraguatatuba</b>");
+        L.marker([-23.77, -45.35]).addTo(map).bindPopup("<b>Ilhabela</b>");
+
+        async function carregarClimaCidades() {
+            const cidades = [
+                { id: 'seba', lat: -23.7600, lon: -45.4097 },
+                { id: 'caragua', lat: -23.6226, lon: -45.4127 },
+                { id: 'ilhabela', lat: -23.7781, lon: -45.3581 }
+            ];
+
+            for (const cidade of cidades) {
+                try {
+                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${cidade.lat}&longitude=${cidade.lon}&current=temperature_2m,rain,cloud_cover,wind_speed_10m`);
+                    const data = await res.json();
+                    
+                    if (data && data.current) {
+                        const temp = Math.round(data.current.temperature_2m);
+                        const rain = data.current.rain;
+                        const clouds = data.current.cloud_cover;
+
+                        document.getElementById(`${cidade.id}-temp`).innerText = `${temp}°C`;
+
+                        let condicao = "Ensolarado";
+                        let icone = "fa-sun";
+
+                        if (rain > 0) {
+                            condicao = `Chuva (${rain}mm)`;
+                            icone = "fa-cloud-showers-heavy";
+                        } else if (clouds > 50) {
+                            condicao = `Nublado (${clouds}%)`;
+                            icone = "fa-cloud";
+                        } else if (clouds > 20) {
+                            condicao = "Parc. Nublado";
+                            icone = "fa-cloud-sun";
+                        }
+
+                        document.getElementById(`${cidade.id}-cond`).innerText = condicao;
+                        document.getElementById(`${cidade.id}-icon`).className = `fa-solid ${icone}`;
+                    }
+                } catch (err) {
+                    document.getElementById(`${cidade.id}-cond`).innerText = "Indisponível";
+                }
+            }
         }
+
+        carregarClimaCidades();
     </script>
 </body>
 </html>
