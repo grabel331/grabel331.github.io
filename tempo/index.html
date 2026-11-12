@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Litoral Norte SP - Meteoblue 3D & Previsão</title>
+    <title>Litoral Norte SP - Previsão</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -17,25 +17,25 @@
         html, body {
             width: 100%;
             height: 100%;
-            overflow: hidden;
             background: #0f172a;
             color: #fff;
             display: flex;
             flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
         }
 
-        /* --- PARTE DE CIMA: COMPACTA DE PONTA A PONTA (~4cm / 150px) --- */
         header {
             width: 100%;
-            height: 150px;
             background: #0f172a;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
             padding: 6px 12px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            flex-shrink: 0;
-            z-index: 10;
+            gap: 4px;
         }
 
         .header-title {
@@ -49,7 +49,6 @@
             gap: 6px;
         }
 
-        /* Tabela compacta com as 3 cidades (São Sebastião, Caraguatatuba, Ilhabela) */
         .cities-wrapper {
             display: flex;
             flex-direction: column;
@@ -83,7 +82,6 @@
             font-size: 0.7rem;
         }
 
-        /* Grade ultra-espremida de 7 dias */
         .days-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -126,74 +124,41 @@
             font-weight: 400;
         }
 
-        /* --- PARTE DE BAIXO: MAPA METEOBLUE OCUPANDO 100% DO RESTANTE DA TELA --- */
-        main {
-            flex: 1;
-            width: 100%;
-            height: calc(100vh - 150px);
-            position: relative;
-        }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-        }
-
         @media (max-width: 768px) {
-            header {
-                height: 170px;
-            }
-            main {
-                height: calc(100vh - 170px);
-            }
             .city-name {
                 width: 90px;
                 font-size: 0.68rem;
             }
             .day-cell .day-lbl {
-                display: none; /* Esconde texto em telas muito pequenas para não encavalar */
+                display: none;
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- PARTE DE CIMA (ESPREMIDA, DE PONTA A PONTA, ~4CM) -->
     <header>
         <div class="header-title">
             <i class="fa-solid fa-location-dot"></i> Previsão Litoral Norte SP — Próximos 7 Dias
         </div>
 
         <div class="cities-wrapper">
-            <!-- São Sebastião -->
             <div class="city-row">
                 <div class="city-name"><i class="fa-solid fa-angle-right"></i> São Sebastião</div>
                 <div class="days-grid" id="seba-grid"></div>
             </div>
 
-            <!-- Caraguatatuba -->
             <div class="city-row">
                 <div class="city-name"><i class="fa-solid fa-angle-right"></i> Caraguatatuba</div>
                 <div class="days-grid" id="caragua-grid"></div>
             </div>
 
-            <!-- Ilhabela -->
             <div class="city-row">
                 <div class="city-name"><i class="fa-solid fa-angle-right"></i> Ilhabela</div>
                 <div class="days-grid" id="ilhabela-grid"></div>
             </div>
         </div>
     </header>
-
-    <!-- PARTE DE BAIXO (MAPA METEOBLUE COMPLETO COM MENU LATERAL E TIMELINE) -->
-    <main>
-        <iframe 
-            src="https://www.meteoblue.com/pt/tempo/mapas#coords=9/-23.76/-45.41&map=wind~hourly~auto~10%20m%20above%20gnd~none" 
-            allowfullscreen>
-        </iframe>
-    </main>
 
     <script>
         const diasSemana = ['Hoje', 'Amanhã', 'Sáb', 'Dom', 'Seg', 'Ter', 'Qua'];
@@ -214,21 +179,18 @@
             }
         }
 
-        // São Sebastião (7 dias)
         gerarGradeEspremida('seba-grid', 
             [24, 25, 24, 26, 25, 25, 26], 
             [18, 18, 18, 19, 18, 17, 19], 
             ['fa-cloud-sun', 'fa-cloud-showers-heavy', 'fa-cloud-sun', 'fa-sun', 'fa-cloud-rain', 'fa-cloud-sun', 'fa-sun']
         );
 
-        // Caraguatatuba (7 dias)
         gerarGradeEspremida('caragua-grid', 
             [23, 25, 24, 27, 25, 25, 27], 
             [17, 18, 18, 19, 17, 17, 19], 
             ['fa-cloud', 'fa-cloud-showers-heavy', 'fa-cloud-sun', 'fa-sun', 'fa-cloud-rain', 'fa-cloud-sun', 'fa-sun']
         );
 
-        // Ilhabela (7 dias)
         gerarGradeEspremida('ilhabela-grid', 
             [25, 25, 24, 26, 25, 25, 27], 
             [20, 20, 20, 21, 20, 19, 21], 
