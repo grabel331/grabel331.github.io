@@ -15,11 +15,11 @@
         
         #map { width: 100vw; height: 100vh; }
 
-        /* Indicador de Carregamento com tamanho original (apenas 1px maior que o inicial) e abaixo do meio */
+        /* Indicador de Carregamento com o texto original e abaixo do meio */
         #loading-indicator {
             position: fixed; top: 60%; left: 50%; transform: translateX(-50%);
             background: rgba(16, 185, 129, 0.9); color: #fff; padding: 6px 16px;
-            border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 2000;
+            border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 2000;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(6px);
             transition: opacity 0.3s ease;
         }
@@ -154,7 +154,7 @@
 </head>
 <body>
 
-    <!-- Aviso visual de carregamento (tamanho discreto e abaixo do meio da tela) -->
+    <!-- Aviso visual de carregamento com o texto original -->
     <div id="loading-indicator">🔄 Carregando estações...</div>
 
     <div id="map"></div>
@@ -238,7 +238,7 @@
                 const lat = parseFloat(station.geo_lat);
                 const lng = parseFloat(station.geo_long);
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    map.flyTo([lat, lng], map.getZoom(), { duration: 1.0 });
+                    map.flyTo([lat, lng], 11, { duration: 1.0 });
                 }
             }
         }
