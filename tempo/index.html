@@ -91,7 +91,7 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 4px;
             padding: 2px 4px;
-            height: 32px;
+            height: 36px; /* Ajustado levemente para acomodar o empilhamento vertical */
         }
 
         .city-name {
@@ -120,41 +120,67 @@
             min-width: 0;
         }
 
+        /* Mudança para empilhar: Dia em cima, ícone + temps embaixo */
         .day-cell {
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 2px;
+            gap: 1px;
             background: rgba(255, 255, 255, 0.03);
             border-radius: 3px;
-            font-size: 0.62rem;
-            padding: 0 1px;
+            padding: 1px;
             white-space: nowrap;
             overflow: hidden;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
 
         .day-cell .day-lbl {
             color: #94a3b8;
             font-weight: 600;
-            font-size: 0.58rem;
+            font-size: 0.54rem;
             text-transform: uppercase;
+            line-height: 1;
+        }
+
+        .day-content {
+            display: flex;
+            align-items: center;
+            gap: 2px;
         }
 
         .day-cell i {
-            font-size: 0.65rem;
+            font-size: 0.58rem;
             color: #fbbf24;
         }
 
         .day-cell .temps {
             font-weight: 600;
             color: #fff;
-            font-size: 0.62rem;
+            font-size: 0.58rem;
+            line-height: 1;
         }
 
         .day-cell .min {
             color: #94a3b8;
-            font-size: 0.58rem;
+            font-size: 0.52rem;
             font-weight: 400;
+        }
+
+        /* Efeito de carregamento animado nos dados */
+        .loading-pulse {
+            opacity: 0.5;
+            animation: pulse 1.2s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.8; }
         }
 
         /* Container do Windy ocupando todo o restante da tela */
@@ -177,18 +203,14 @@
                 width: 85px;
                 font-size: 0.62rem;
             }
-            .day-cell {
-                font-size: 0.55rem;
-                gap: 1px;
-            }
             .day-cell .day-lbl {
-                font-size: 0.52rem;
+                font-size: 0.5rem;
             }
             .day-cell .temps {
-                font-size: 0.58rem;
+                font-size: 0.54rem;
             }
             .day-cell .min {
-                font-size: 0.52rem;
+                font-size: 0.48rem;
             }
             .header-title {
                 font-size: 0.62rem;
@@ -216,17 +238,17 @@
         <div class="cities-wrapper">
             <div class="city-row">
                 <div class="city-name"><i class="fa-solid fa-angle-right"></i> São Sebastião</div>
-                <div class="days-grid" id="seba-grid"></div>
+                <div class="days-grid loading-pulse" id="seba-grid"></div>
             </div>
 
             <div class="city-row">
                 <div class="city-name"><i class="fa-solid fa-angle-right"></i> Caraguatatuba</div>
-                <div class="days-grid" id="caragua-grid"></div>
+                <div class="days-grid loading-pulse" id="caragua-grid"></div>
             </div>
 
             <div class="city-row">
                 <div class="city-name"><i class="fa-solid fa-angle-right"></i> Ilhabela</div>
-                <div class="days-grid" id="ilhabela-grid"></div>
+                <div class="days-grid loading-pulse" id="ilhabela-grid"></div>
             </div>
         </div>
     </header>
@@ -243,40 +265,68 @@
     <script>
         const diasSemana = ['Hoje', 'Amanhã', 'Sáb', 'Dom', 'Seg', 'Ter', 'Qua'];
 
-        function gerarGradeEspremida(containerId, maxs, mins, icones) {
+        // Função para traduzir códigos de clima do Open-Meteo em ícones do FontAwesome
+        function obterIconeClima(codigoWMO) {
+            if (codigoWMO === 0) return 'fa-sun'; // Céu limpo
+            if (codigoWMO >= 1 && codigoWMO <= 3) return 'fa-cloud-sun'; // Parcialmente nublado
+            if (codigoWMO >= 51 && codigoWMO <= 67) return 'fa-cloud-rain'; // Chuva
+            if (codigoWMO >= 80 && codigoWMO <= 99) return 'fa-cloud-showers-heavy'; // Pancadas fortes / tempestade
+            return 'fa-cloud'; // Nublado padrão
+        }
+
+        // Função para formatar o dia da semana a partir da data real
+        function formatarDiaSemana(dataStr, index) {
+            if (index === 0) return 'Hoje';
+            if (index === 1) return 'Amanhã';
+            const diasAbv = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            const data = new Date(dataStr + 'T00:00:00');
+            return diasAbv[data.getDay()];
+        }
+
+        function renderizarGrade(containerId, maxs, mins, icones, datas) {
             const container = document.getElementById(containerId);
+            container.classList.remove('loading-pulse');
             container.innerHTML = '';
 
             for (let i = 0; i < 7; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'day-cell';
+                const labelDia = formatarDiaSemana(datas[i], i);
                 cell.innerHTML = `
-                    <span class="day-lbl">${diasSemana[i]}</span>
-                    <i class="fa-solid ${icones[i]}"></i>
-                    <span class="temps">${maxs[i]}°<span class="min">${mins[i]}°</span></span>
+                    <span class="day-lbl">${labelDia}</span>
+                    <div class="day-content">
+                        <i class="fa-solid ${icones[i]}"></i>
+                        <span class="temps">${Math.round(maxs[i])}°<span class="min">${Math.round(mins[i])}°</span></span>
+                    </div>
                 `;
                 container.appendChild(cell);
             }
         }
 
-        gerarGradeEspremida('seba-grid', 
-            [24, 25, 24, 26, 25, 25, 26], 
-            [18, 18, 18, 19, 18, 17, 19], 
-            ['fa-cloud-sun', 'fa-cloud-showers-heavy', 'fa-cloud-sun', 'fa-sun', 'fa-cloud-rain', 'fa-cloud-sun', 'fa-sun']
-        );
+        // Função assíncrona para buscar dados reais da API Open-Meteo
+        async function buscarPrevisao(lat, lon, containerId) {
+            try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
+                const resposta = await fetch(url);
+                const dados = await resposta.json();
 
-        gerarGradeEspremida('caragua-grid', 
-            [23, 25, 24, 27, 25, 25, 27], 
-            [17, 18, 18, 19, 17, 17, 19], 
-            ['fa-cloud', 'fa-cloud-showers-heavy', 'fa-cloud-sun', 'fa-sun', 'fa-cloud-rain', 'fa-cloud-sun', 'fa-sun']
-        );
+                const maxs = dados.daily.temperature_2m_max;
+                const mins = dados.daily.temperature_2m_min;
+                const codigos = dados.daily.weathercode;
+                const datas = dados.daily.time;
 
-        gerarGradeEspremida('ilhabela-grid', 
-            [25, 25, 24, 26, 25, 25, 27], 
-            [20, 20, 20, 21, 20, 19, 21], 
-            ['fa-cloud-sun', 'fa-cloud-showers-heavy', 'fa-cloud', 'fa-sun', 'fa-cloud-rain', 'fa-cloud-sun', 'fa-sun']
-        );
+                const icones = codigos.map(codigo => obterIconeClima(codigo));
+
+                renderizarGrade(containerId, maxs, mins, icones, datas);
+            } catch (erro) {
+                console.error("Erro ao buscar clima para " + containerId, erro);
+            }
+        }
+
+        // Coordenadas das cidades e chamada simultânea
+        buscarPrevisao(-23.760, -45.410, 'seba-grid');     // São Sebastião
+        buscarPrevisao(-23.619, -45.411, 'caragua-grid');    // Caraguatatuba
+        buscarPrevisao(-23.778, -45.358, 'ilhabela-grid');   // Ilhabela
     </script>
-
 </body>
 </html>
