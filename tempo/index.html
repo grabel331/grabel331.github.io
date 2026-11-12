@@ -91,7 +91,7 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 4px;
             padding: 2px 4px;
-            height: 36px; /* Ajustado levemente para acomodar o empilhamento vertical */
+            height: 36px;
         }
 
         .city-name {
@@ -120,7 +120,6 @@
             min-width: 0;
         }
 
-        /* Mudança para empilhar: Dia em cima, ícone + temps embaixo */
         .day-cell {
             display: flex;
             flex-direction: column;
@@ -253,10 +252,10 @@
         </div>
     </header>
 
-    <!-- Windy Embed com as coordenadas originais em São Francisco/São Sebastião -->
+    <!-- Windy Embed com zoom 11 e as novas coordenadas -23.799, -45.387 -->
     <div class="windy-container">
         <iframe 
-            src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=%C2%B0C&metricWind=km%2Fh&zoom=9&overlay=wind&product=ecmwf&level=surface&lat=-23.760&lon=-45.410&detail=true&detailLat=-23.760&detailLon=-45.410&calendar=now&pressure=true&message=true&marker=true" 
+            src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=%C2%B0C&metricWind=km%2Fh&zoom=11&overlay=wind&product=ecmwf&level=surface&lat=-23.799&lon=-45.387&detail=true&detailLat=-23.799&detailLon=-45.387&calendar=now&pressure=true&message=true&marker=true" 
             allow="geolocation"
             allowfullscreen>
         </iframe>
@@ -265,16 +264,14 @@
     <script>
         const diasSemana = ['Hoje', 'Amanhã', 'Sáb', 'Dom', 'Seg', 'Ter', 'Qua'];
 
-        // Função para traduzir códigos de clima do Open-Meteo em ícones do FontAwesome
         function obterIconeClima(codigoWMO) {
-            if (codigoWMO === 0) return 'fa-sun'; // Céu limpo
-            if (codigoWMO >= 1 && codigoWMO <= 3) return 'fa-cloud-sun'; // Parcialmente nublado
-            if (codigoWMO >= 51 && codigoWMO <= 67) return 'fa-cloud-rain'; // Chuva
-            if (codigoWMO >= 80 && codigoWMO <= 99) return 'fa-cloud-showers-heavy'; // Pancadas fortes / tempestade
-            return 'fa-cloud'; // Nublado padrão
+            if (codigoWMO === 0) return 'fa-sun';
+            if (codigoWMO >= 1 && codigoWMO <= 3) return 'fa-cloud-sun';
+            if (codigoWMO >= 51 && codigoWMO <= 67) return 'fa-cloud-rain';
+            if (codigoWMO >= 80 && codigoWMO <= 99) return 'fa-cloud-showers-heavy';
+            return 'fa-cloud';
         }
 
-        // Função para formatar o dia da semana a partir da data real
         function formatarDiaSemana(dataStr, index) {
             if (index === 0) return 'Hoje';
             if (index === 1) return 'Amanhã';
@@ -303,7 +300,6 @@
             }
         }
 
-        // Função assíncrona para buscar dados reais da API Open-Meteo
         async function buscarPrevisao(lat, lon, containerId) {
             try {
                 const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
@@ -323,7 +319,7 @@
             }
         }
 
-        // Coordenadas das cidades e chamada simultânea
+        // Coordenadas das cidades mantidas
         buscarPrevisao(-23.760, -45.410, 'seba-grid');     // São Sebastião
         buscarPrevisao(-23.619, -45.411, 'caragua-grid');    // Caraguatatuba
         buscarPrevisao(-23.778, -45.358, 'ilhabela-grid');   // Ilhabela
