@@ -171,7 +171,7 @@
 
     <!-- Player Persistente (Nome em cima, Controles embaixo) -->
     <div id="player-bar">
-        <span id="station-info">Carregando Profanum MC...</span>
+        <span id="station-info">Carregando Alpha MPB...</span>
         <div class="player-controls">
             <button class="station-nav-btn" onclick="mudarEstacao(-1)" title="Estação Anterior">◀</button>
             <audio id="audio-player" controls></audio>
@@ -212,7 +212,7 @@
 
         let listaEstacoes = [];
         let indiceAtual = 0;
-        let streamProfanumUrl = '';
+        let streamAlphaUrl = '';
 
         function tratarStreamUrl(station) {
             let rawUrl = station.url_resolved || station.url;
@@ -246,8 +246,8 @@
         // Desbloqueia e toca o som no primeiro clique que o usuário der na página inteira
         document.addEventListener('click', function iniciarAudioGlobal() {
             const audio = document.getElementById('audio-player');
-            if (audio.paused && streamProfanumUrl) {
-                audio.src = streamProfanumUrl;
+            if (audio.paused && streamAlphaUrl) {
+                audio.src = streamAlphaUrl;
                 audio.play().catch(err => console.log("Erro ao iniciar:", err));
             }
             document.removeEventListener('click', iniciarAudioGlobal);
@@ -262,16 +262,16 @@
         async function loadRadios() {
             for (let server of apiServers) {
                 try {
-                    const resProfanum = await fetch(`${server}/json/stations/search?name=PROFANUM%20MC%20MUNDIAL&limit=5&hidebroken=true`);
-                    const stationsProfanum = resProfanum.ok ? await resProfanum.json() : [];
+                    const resAlpha = await fetch(`${server}/json/stations/search?name=Alpha%20MPB&limit=5&hidebroken=true`);
+                    const stationsAlpha = resAlpha.ok ? await resAlpha.json() : [];
                     
-                    if (stationsProfanum.length > 0) {
-                        const profanumStation = stationsProfanum.find(s => s.url_resolved || s.url);
-                        if (profanumStation) {
-                            streamProfanumUrl = tratarStreamUrl(profanumStation);
-                            document.getElementById('station-info').innerText = profanumStation.name;
+                    if (stationsAlpha.length > 0) {
+                        const alphaStation = stationsAlpha.find(s => s.url_resolved || s.url);
+                        if (alphaStation) {
+                            streamAlphaUrl = tratarStreamUrl(alphaStation);
+                            document.getElementById('station-info').innerText = alphaStation.name;
                             const audio = document.getElementById('audio-player');
-                            audio.src = streamProfanumUrl;
+                            audio.src = streamAlphaUrl;
                             
                             audio.play().catch(() => {
                                 console.log("Autoplay barrado pelo navegador. Tocará no primeiro clique na página.");
