@@ -279,11 +279,11 @@
                         }
                     }
 
-                    // Buscas expandidas para carregar o máximo de estações do Brasil e globais sem quebrar
+                    // Limites máximos estendidos para buscar o maior número possível de rádios do Brasil e do mundo
                     const [resGlobal, resBrasil, resSP] = await Promise.all([
-                        fetch(`${server}/json/stations/search?has_geo=true&limit=10000&hidebroken=true`),
-                        fetch(`${server}/json/stations/search?countrycode=BR&has_geo=true&limit=6000&hidebroken=true`),
-                        fetch(`${server}/json/stations/search?state=São%20Paulo&has_geo=true&limit=2000&hidebroken=true`)
+                        fetch(`${server}/json/stations/search?has_geo=true&limit=15000&hidebroken=true`),
+                        fetch(`${server}/json/stations/search?countrycode=BR&has_geo=true&limit=8000&hidebroken=true`),
+                        fetch(`${server}/json/stations/search?state=São%20Paulo&has_geo=true&limit=3000&hidebroken=true`)
                     ]);
 
                     if (!resGlobal.ok && !resBrasil.ok) continue;
@@ -293,7 +293,6 @@
                     const stationsSP = resSP.ok ? await resSP.json() : [];
 
                     const mapStations = new Map();
-                    // Prioriza SP e Brasil, seguidos do restante global
                     [...stationsSP, ...stationsBrasil, ...stationsGlobal].forEach(s => {
                         if (s.stationuuid && !mapStations.has(s.stationuuid)) {
                             mapStations.set(s.stationuuid, s);
@@ -329,6 +328,7 @@
                     });
 
                     if (markerList.length > 0) {
+                        markers.clearLayers();
                         markers.addLayers(markerList);
                         map.addLayer(markers);
 
