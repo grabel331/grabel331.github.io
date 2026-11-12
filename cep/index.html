@@ -180,9 +180,20 @@
 
     <!-- Caixa de Pesquisa Fixa no Topo com Sugestões -->
     <div id="search-bar">
-        <span id="address-info" style="color: #ffffff;">
-  Digite: CEP ou Rua ou use o <a href="https://google.com" style="color: #ffffff; text-decoration: underline;">Google</a>.
+        <span id="address-info">Digite: CEP ou Rua ou use o <a href="https://google.com"> Google. </a>  <br> 
+        
+        
+        <span style="font-size: 13px; color: #aaa;">
+  Tec. usadas <a href="https://leafletjs.com/" target="_blank" style="color: #0078A8; text-decoration: underline;">Leaflet</a> & 
+  <a href="https://www.openstreetmap.org/" target="_blank" style="color: #709E38; text-decoration: underline;">OpenStreetMap</a> <br>  
+  Mecanismo de busca <a href="https://nominatim.org/" target="_blank" style="color: #ffffff; text-decoration: underline;">Nominatim</a>
 </span>
+        
+        
+        </span>
+        
+        <span id="address-info"> <a href="htNominatimtps://nominatim.org/" target="_blank" style="color: #ffffff;"></a></span>
+        
         <div class="search-controls">
             <input type="text" id="cep-input" placeholder="CEP ou Endereço" autocomplete="off">
             <button class="search-btn" onclick="executarBusca()">Buscar</button>
@@ -372,6 +383,8 @@
             map.flyTo([lat, lon], zoom, { duration: 1.5 });
         }
     </script>
+    
+  
 </body>
-</html>
+
 </html>
