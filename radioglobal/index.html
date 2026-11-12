@@ -15,6 +15,15 @@
         
         #map { width: 100vw; height: 100vh; }
 
+        /* Indicador de Carregamento das Rádios */
+        #loading-indicator {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(16, 185, 129, 0.9); color: #fff; padding: 6px 16px;
+            border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 2000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(6px);
+            transition: opacity 0.3s ease;
+        }
+
         /* Player Flutuante Responsivo */
         #player-bar {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -121,25 +130,26 @@
             background: #059669;
         }
 		
-
-.continent-btn {
-    text-decoration: none;
-}
+        .continent-btn {
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
+
+    <!-- Aviso visual de carregamento -->
+    <div id="loading-indicator">🔄 Carregando estações de rádio globais...</div>
 
     <div id="map"></div>
 
     <!-- Botões de escolha de continente com "GLOBAL" -->
     <div class="continent-selector">
-	<a href="https://www.gabrielpereira.net.eu.org" class="continent-btn">🏠 Home</a>
+        <a href="https://www.gabrielpereira.net.eu.org" class="continent-btn">🏠 Home</a>
         <button class="continent-btn mundo" onclick="irPara(20, 0, 3)">🌐 GLOBAL</button>
         <button class="continent-btn" onclick="irPara(-23.7602, -45.4042, 6)">🌎 América do Sul</button>
         <button class="continent-btn" onclick="irPara(40.0, -100.0, 4)">🌎 América do Norte</button>
         <button class="continent-btn" onclick="irPara(50.0, 10.0, 4)">🌍 Europa</button>
         <button class="continent-btn" onclick="irPara(30.0, 100.0, 3)">🌏 Ásia e Oceania</button>
-		
     </div>
 
     <!-- Player Persistente -->
@@ -221,7 +231,6 @@
                 audio.src = streamProfanumUrl;
                 audio.play().catch(err => console.log("Erro ao iniciar:", err));
             }
-            // Remove o ouvinte após o primeiro clique bem-sucedido
             document.removeEventListener('click', iniciarAudioGlobal);
         }, { once: true });
 
@@ -245,7 +254,6 @@
                             const audio = document.getElementById('audio-player');
                             audio.src = streamProfanumUrl;
                             
-                            // Tenta tocar direto (se o navegador permitir sem interação prévia)
                             audio.play().catch(() => {
                                 console.log("Autoplay barrado pelo navegador. Tocará no primeiro clique na página.");
                             });
@@ -300,6 +308,19 @@
                     if (markerList.length > 0) {
                         markers.addLayers(markerList);
                         map.addLayer(markers);
+
+                        // Força o mapa a exibir os marcadores imediatamente
+                        setTimeout(() => {
+                            map.invalidateSize();
+                        }, 200);
+
+                        // Remove o aviso de carregamento assim que os pontos aparecem
+                        const loader = document.getElementById('loading-indicator');
+                        if (loader) {
+                            loader.style.opacity = '0';
+                            setTimeout(() => loader.remove(), 300);
+                        }
+
                         break;
                     }
                 } catch (e) {
