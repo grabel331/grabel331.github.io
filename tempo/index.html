@@ -38,6 +38,14 @@
             z-index: 10;
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: nowrap; /* Garante que fiquem na mesma linha */
+            overflow: hidden;   /* Evita vazamentos caso a tela seja minúscula */
+        }
+
         .header-title {
             font-size: 0.75rem;
             font-weight: 700;
@@ -47,9 +55,12 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 		
-		 .btn-home {
+        .btn-home {
             background: rgba(56, 189, 248, 0.1);
             border: 1px solid rgba(56, 189, 248, 0.3);
             color: #38bdf8;
@@ -61,14 +72,11 @@
             display: flex;
             align-items: center;
             gap: 5px;
+            white-space: nowrap; /* Impede que o texto "Página inicial" quebre */
+            flex-shrink: 0;     /* Impede que o botão encolha de forma indesejada */
             transition: background 0.2s;
         }
-		
-.header-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+
         .cities-wrapper {
             display: flex;
             flex-direction: column;
@@ -166,6 +174,14 @@
             .day-cell .day-lbl {
                 display: none;
             }
+            /* Ajustes finos para celulares pequenos */
+            .header-title {
+                font-size: 0.68rem;
+            }
+            .btn-home {
+                font-size: 0.65rem;
+                padding: 2px 6px;
+            }
         }
     </style>
 </head>
@@ -174,13 +190,13 @@
     <!-- Cabeçalho colado no topo -->
     <header>
         <div class="header-left">
-                <a href="https://gabrielpereira.net.eu.org" class="btn-home">
-                    🏠 Página inicial
-                </a>
-                <div class="header-title">
-                    <i class="fa-solid fa-location-dot"></i> Previsão Litoral Norte SP — Próximos 7 Dias
-                </div>
+            <a href="https://gabrielpereira.net.eu.org" class="btn-home">
+                🏠 Página inicial
+            </a>
+            <div class="header-title">
+                <i class="fa-solid fa-location-dot"></i> Previsão Litoral Norte SP — Próximos 7 Dias
             </div>
+        </div>
 
         <div class="cities-wrapper">
             <div class="city-row">
