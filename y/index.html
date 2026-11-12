@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Y - Meu YouTube Pessoal</title>
+    <style>
+        :root {
+            --bg-color: #0f1115;
+            --surface-color: #1a1d24;
+            --border-color: #2c313a;
+            --accent-color: #3b82f6; 
+            --accent-hover: #2563eb;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Barra Superior */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            height: 56px;
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .logo-y {
+            background-color: var(--accent-color);
+            color: white;
+            font-weight: 800;
+            font-size: 20px;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            letter-spacing: -1px;
+        }
+
+        .logo-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .search-box {
+            display: flex;
+            width: 400px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .search-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 8px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-box button {
+            background: var(--border-color);
+            border: none;
+            padding: 0 16px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .search-box button:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        /* Conteúdo Principal */
+        main {
+            margin-top: 56px;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .content-container {
+            max-width: 1100px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Área do Player com Iframe */
+        .player-section {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            padding: 16px;
+            border-radius: 16px;
+        }
+
+        .player-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .player-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .placeholder-aviso {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--surface-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 15px;
+            border: 1px dashed var(--border-color);
+            border-radius: 12px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .video-meta {
+            margin-top: 12px;
+        }
+
+        .video-meta h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Grade de Vídeos (Sugestões e Pesquisa) */
+        .section-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .video-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .video-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-color);
+        }
+
+        .thumbnail-box {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background-color: #262a33;
+            position: relative;
+        }
+
+        .thumbnail-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-info {
+            padding: 10px;
+        }
+
+        .video-info h4 {
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.3;
+            color: var(--text-primary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barra Superior com Pesquisa -->
+    <header>
+        <div class="logo-area" onclick="carregarSugestoesIniciais()">
+            <div class="logo-y">Y</div>
+            <span class="logo-title">Y</span>
+        </div>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Pesquisar vídeos..." onkeypress="checarEnter(event)">
+            <button onclick="realizarBusca()">🔍</button>
+        </div>
+        <div></div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main>
+        <div class="content-container">
+            
+            <!-- Player com Iframe Seguro -->
+            <div class="player-section">
+                <div class="player-wrapper">
+                    <iframe id="meuIframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    
+                    <div id="playerPlaceholder" class="placeholder-aviso">
+                        <span>▶ Selecione ou pesquise um vídeo para assistir</span>
+                    </div>
+                </div>
+                <div class="video-meta">
+                    <h2 id="tituloAtual">Nenhum vídeo em reprodução</h2>
+                </div>
+            </div>
+
+            <!-- Lista de Vídeos (Sugestões / Seus Favoritos) -->
+            <div>
+                <h3 class="section-title" id="secaoTitulo">Sugestões / Seus Favoritos</h3>
+                <div class="video-grid" id="videoGrid">
+                    <!-- Os vídeos serão injetados aqui via JS -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // ==========================================
+        // SUAS SUGESTÕES / FAVORITOS PESSOAIS FIXOS
+        // (Você pode adicionar ou remover IDs do YouTube aqui!)
+        // ==========================================
+        const meusVideosFavoritos = [
+            { id: 'M7lc1UVf-VE', title: 'Demonstração Oficial API YouTube' },
+            { id: 'aqz-KE-bpKQ', title: 'Big Buck Bunny (Animação de Teste)' },
+            { id: 'dQw4w9WgXcQ', title: 'Música Clássica Especial' }
+        ];
+
+        const INSTANCIAS_INVIDIOUS = [
+            'https://invidious.privacydev.net',
+            'https://inv.nadeko.net',
+            'https://vid.priv.au'
+        ];
+
+        // Carrega as sugestões locais ao abrir a página
+        window.addEventListener('DOMContentLoaded', () => {
+            mostrarFavoritosLocais();
+        });
+
+        function mostrarFavoritosLocais() {
+            document.getElementById('secaoTitulo').textContent = 'Seus Favoritos / Sugestões';
+            const grid = document.getElementById('videoGrid');
+            grid.innerHTML = '';
+
+            meusVideosFavoritos.forEach(video => {
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.onclick = () => reproduzirNoIframe(video.id, video.title);
+
+                card.innerHTML = `
+                    <div class="thumbnail-box">
+                        <img src="https://img.youtube.com/vi/${video.id}/hqdefault.jpg" alt="${video.title}">
+                    </div>
+                    <div class="video-info">
+                        <h4>${video.title}</h4>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function checarEnter(e) {
+            if (e.key === 'Enter') realizarBusca();
+        }
+
+        // Barra de Pesquisa usando APIs abertas de contorno
+        async function realizarBusca() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                mostrarFavoritosLocais();
+                return;
+            }
+
+            document.getElementById('secaoTitulo').textContent = `Resultados para: "${query}"`;
+            const grid = document.getElementById('videoGrid');
+            grid.innerHTML = '<p style="color: var(--text-secondary);">Buscando...</p>';
+
+            let dadosEncontrados = false;
+
+            for (let i = 0; i < INSTANCIAS_INVIDIOUS.length; i++) {
+                try {
+                    const res = await fetch(`${INSTANCIAS_INVIDIOUS[i]}/api/v1/search?q=${encodeURIComponent(query)}`);
+                    if (!res.ok) continue;
+                    const items = await res.json();
+                    
+                    const videos = items.filter(item => item.type === 'video');
+                    if (videos.length > 0) {
+                        grid.innerHTML = '';
+                        videos.forEach(video => {
+                            const thumb = video.videoThumbnails && video.videoThumbnails.length > 0 ? video.videoThumbnails[0].url : `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`;
+                            
+                            const card = document.createElement('div');
+                            card.className = 'video-card';
+                            card.onclick = () => reproduzirNoIframe(video.videoId, video.title);
+
+                            card.innerHTML = `
+                                <div class="thumbnail-box">
+                                    <img src="${thumb}" alt="${video.title}">
+                                </div>
+                                <div class="video-info">
+                                    <h4>${video.title}</h4>
+                                </div>
+                            `;
+                            grid.appendChild(card);
+                        });
+                        dadosEncontrados = true;
+                        break;
+                    }
+                } catch (err) {
+                    // Tenta a próxima instância se der erro
+                }
+            }
+
+            if (!dadosEncontrados) {
+                grid.innerHTML = '<p style="color: #ef4444;">Não foi possível buscar no momento. Verifique sua conexão ou tente novamente.</p>';
+            }
+        }
+
+        function reproduzirNoIframe(videoId, titulo) {
+            const iframe = document.getElementById('meuIframe');
+            const aviso = document.getElementById('playerPlaceholder');
+            const tituloEl = document.getElementById('tituloAtual');
+            
+            // Ativa o player limpo do YouTube embutido
+            iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0`;
+            aviso.style.display = 'none';
+            tituloEl.textContent = titulo;
+            
+            // Rola levemente a tela para o topo para ver o player rodando
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
