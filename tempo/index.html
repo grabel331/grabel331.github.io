@@ -3,237 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Litoral Norte SP - Meteoblue 3D & Previsão</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Litoral Norte SP - Clima & Ventos 3D</title>
     <style>
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        html, body {
-            width: 100%;
-            height: 100%;
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
             overflow: hidden;
-            background: #0f172a;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
         }
 
-        /* --- PARTE DE CIMA: COMPACTA DE PONTA A PONTA (~4cm / 150px) --- */
         header {
-            width: 100%;
-            height: 150px;
-            background: #0f172a;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 6px 12px;
+            background-color: #1e293b;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+        }
+
+        header h1 {
+            font-size: 1.2rem;
+            color: #38bdf8;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            position: relative;
+            height: calc(100vh - 55px);
+        }
+
+        /* Barra de menu lateral customizada para controlar as camadas do Windy */
+        .custom-controls {
+            width: 240px;
+            background-color: #1e293b;
+            padding: 15px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            flex-shrink: 0;
+            gap: 12px;
+            border-right: 1px solid #334155;
             z-index: 10;
         }
 
-        .header-title {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #38bdf8;
+        .custom-controls h3 {
+            font-size: 0.95rem;
+            color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            margin-bottom: 5px;
         }
 
-        /* Tabela compacta com as 3 cidades (São Sebastião, Caraguatatuba, Ilhabela) */
-        .cities-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            width: 100%;
-        }
-
-        .city-row {
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 4px;
-            padding: 2px 8px;
-            height: 36px;
-        }
-
-        .city-name {
-            width: 130px;
-            font-size: 0.75rem;
-            font-weight: 700;
+        .layer-btn {
+            background-color: #334155;
             color: #f8fafc;
-            white-space: nowrap;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 6px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s, color 0.2s;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 8px;
+            text-decoration: none;
         }
 
-        .city-name i {
+        .layer-btn:hover {
+            background-color: #475569;
             color: #38bdf8;
-            font-size: 0.7rem;
         }
 
-        /* Grade ultra-espremida de 7 dias */
-        .days-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            flex: 1;
-            gap: 4px;
-            height: 100%;
-        }
-
-        .day-cell {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 3px;
-            font-size: 0.7rem;
-            padding: 0 2px;
-        }
-
-        .day-cell .day-lbl {
-            color: #94a3b8;
-            font-weight: 600;
-            font-size: 0.65rem;
-            text-transform: uppercase;
-        }
-
-        .day-cell i {
-            font-size: 0.75rem;
-            color: #fbbf24;
-        }
-
-        .day-cell .temps {
-            font-weight: 600;
+        .layer-btn.active {
+            background-color: #0284c7;
             color: #fff;
+            font-weight: 600;
         }
 
-        .day-cell .min {
-            color: #94a3b8;
-            font-size: 0.65rem;
-            font-weight: 400;
+        .external-link {
+            margin-top: auto;
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            text-align: center;
         }
 
-        /* --- PARTE DE BAIXO: MAPA METEOBLUE OCUPANDO 100% DO RESTANTE DA TELA --- */
-        main {
+        /* Área do Iframe do Windy */
+        .map-wrapper {
             flex: 1;
-            width: 100%;
-            height: calc(100vh - 150px);
             position: relative;
+            height: 100%;
         }
 
         iframe {
             width: 100%;
             height: 100%;
             border: none;
-            display: block;
-        }
-
-        @media (max-width: 768px) {
-            header {
-                height: 170px;
-            }
-            main {
-                height: calc(100vh - 170px);
-            }
-            .city-name {
-                width: 90px;
-                font-size: 0.68rem;
-            }
-            .day-cell .day-lbl {
-                display: none; /* Esconde texto em telas muito pequenas para não encavalar */
-            }
         }
     </style>
 </head>
 <body>
 
-    <!-- PARTE DE CIMA (ESPREMIDA, DE PONTA A PONTA, ~4CM) -->
     <header>
-        <div class="header-title">
-            <i class="fa-solid fa-location-dot"></i> Previsão Litoral Norte SP — Próximos 7 Dias
-        </div>
-
-        <div class="cities-wrapper">
-            <!-- São Sebastião -->
-            <div class="city-row">
-                <div class="city-name"><i class="fa-solid fa-angle-right"></i> São Sebastião</div>
-                <div class="days-grid" id="seba-grid"></div>
-            </div>
-
-            <!-- Caraguatatuba -->
-            <div class="city-row">
-                <div class="city-name"><i class="fa-solid fa-angle-right"></i> Caraguatatuba</div>
-                <div class="days-grid" id="caragua-grid"></div>
-            </div>
-
-            <!-- Ilhabela -->
-            <div class="city-row">
-                <div class="city-name"><i class="fa-solid fa-angle-right"></i> Ilhabela</div>
-                <div class="days-grid" id="ilhabela-grid"></div>
-            </div>
-        </div>
+        <h1>Litoral Norte SP - Clima & Ventos</h1>
+        <span style="font-size: 0.85rem; color: #94a3b8;">São Sebastião / Caraguatatuba</span>
     </header>
 
-    <!-- PARTE DE BAIXO (MAPA METEOBLUE COMPLETO COM MENU LATERAL E TIMELINE) -->
-    <main>
-        <iframe 
-            src="https://www.meteoblue.com/pt/tempo/mapas#coords=9/-23.76/-45.41&map=wind~hourly~auto~10%20m%20above%20gnd~none" 
-            allowfullscreen>
-        </iframe>
-    </main>
+    <div class="main-container">
+        <!-- Menu Lateral com Atalhos para Camadas -->
+        <div class="custom-controls">
+            <h3>Camadas de Vento</h3>
+            <!-- O parâmetro 'metricWind=km/h' ajusta a unidade para km/h -->
+            <button class="layer-btn active" onclick="mudarCamada('wind', this)">💨 Vento & Rajadas</button>
+            <button class="layer-btn" onclick="mudarCamada('rain', this)">🌧️ Chuva & Trovoadas</button>
+            <button class="layer-btn" onclick="mudarCamada('temp', this)">🌡️ Temperatura</button>
+            <button class="layer-btn" onclick="mudarCamada('pressure', this)">📊 Pressão Atmosférica</button>
+            <button class="layer-btn" onclick="mudarCamada('waves', this)">🌊 Ondas (Mar)</button>
+
+            <a href="https://www.windy.com/-23.761/-45.410?-23.761,-45.410,11" target="_blank" class="layer-btn external-link">
+                🌐 Abrir Windy Completo ↗
+            </a>
+        </div>
+
+        <!-- Visualizador do Mapa -->
+        <div class="map-wrapper">
+            <iframe id="windy-iframe" src="https://embed.windy.com/embed2.html?lat=-23.761&lon=-45.410&detailLat=-23.761&detailLon=-45.410&width=650&height=450&zoom=11&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=true&type=map&location=coordinates&detail=true&metricWind=km/h&metricTemp=°C&radarRange=-1" title="Windy Map"></iframe>
+        </div>
+    </div>
 
     <script>
-        const diasSemana = ['Hoje', 'Amanhã', 'Sáb', 'Dom', 'Seg', 'Ter', 'Qua'];
+        function mudarCamada(overlayType, elementoBtn) {
+            // Remove a classe ativa de todos os botões e adiciona no clicado
+            document.querySelectorAll('.layer-btn').forEach(btn => btn.classList.remove('active'));
+            if(elementoBtn) elementoBtn.classList.add('active');
 
-        function gerarGradeEspremida(containerId, maxs, mins, icones) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
+            // Atualiza o link src do iframe preservando as coordenadas de São Sebastião (-23.761, -45.410)
+            const iframe = document.getElementById('windy-iframe');
+            const baseUrl = "https://embed.windy.com/embed2.html?";
+            const params = new URLSearchParams({
+                lat: "-23.761",
+                lon: "-45.410",
+                detailLat: "-23.761",
+                detailLon: "-45.410",
+                width: "650",
+                height: "450",
+                zoom: "11",
+                level: "surface",
+                overlay: overlayType,
+                product: "ecmwf",
+                metricWind: "km/h",
+                metricTemp: "°C",
+                pressure: "true",
+                type: "map",
+                location: "coordinates",
+                detail: "true"
+            });
 
-            for (let i = 0; i < 7; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'day-cell';
-                cell.innerHTML = `
-                    <span class="day-lbl">${diasSemana[i]}</span>
-                    <i class="fa-solid ${icones[i]}"></i>
-                    <span class="temps">${maxs[i]}°<span class="min">${mins[i]}°</span></span>
-                `;
-                container.appendChild(cell);
-            }
+            iframe.src = baseUrl + params.toString();
         }
-
-        // São Sebastião (7 dias)
-        gerarGradeEspremida('seba-grid', 
-            [24, 25, 24, 26, 25, 25, 26], 
-            [18, 18, 18, 19, 18, 17, 19], 
-            ['fa-cloud-sun', 'fa-cloud-showers-heavy', 'fa-cloud-sun', 'fa-sun', 'fa-cloud-rain', 'fa-cloud-sun', 'fa-sun']
-        );
-
-        // Caraguatatuba (7 dias)
-        gerarGradeEspremida('caragua-grid', 
-            [23, 25, 24, 27, 25, 25, 27], 
-            [17, 18, 18, 19, 17, 17, 19], 
-            ['fa-cloud', 'fa-cloud-showers-heavy', 'fa-cloud-sun', 'fa-sun', 'fa-cloud-rain', 'fa-cloud-sun', 'fa-sun']
-        );
-
-        // Ilhabela (7 dias)
-        gerarGradeEspremida('ilhabela-grid', 
-            [25, 25, 24, 26, 25, 25, 27], 
-            [20, 20, 20, 21, 20, 19, 21], 
-            ['fa-cloud-sun', 'fa-cloud-showers-heavy', 'fa-cloud', 'fa-sun', 'fa-cloud-rain', 'fa-cloud-sun', 'fa-sun']
-        );
     </script>
 </body>
 </html>
