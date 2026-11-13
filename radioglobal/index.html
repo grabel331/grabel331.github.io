@@ -15,7 +15,6 @@
         
         #map { width: 100vw; height: 100vh; }
 
-        /* Indicador de Carregamento com o texto original e abaixo do meio */
         #loading-indicator {
             position: fixed; top: 60%; left: 50%; transform: translateX(-50%);
             background: rgba(16, 185, 129, 0.9); color: #fff; padding: 6px 16px;
@@ -24,7 +23,6 @@
             transition: opacity 0.3s ease;
         }
 
-        /* Player Flutuante (Nome em cima, Controles embaixo) */
         #player-bar {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             background: rgba(15, 23, 42, 0.95); color: #fff; padding: 10px 16px;
@@ -35,7 +33,6 @@
             width: 280px;
         }
         
-        /* Linha superior: Nome da estação bem legível */
         #station-info { 
             font-size: 13px; 
             font-weight: 600; 
@@ -47,7 +44,6 @@
             color: #10b981; 
         }
 
-        /* Linha inferior: Botões e Player de Áudio alinhados */
         .player-controls {
             display: flex;
             align-items: center;
@@ -56,7 +52,6 @@
             width: 100%;
         }
         
-        /* Botões de Troca de Estação Sutis (Anterior e Próximo) */
         .station-nav-btn {
             background: rgba(255, 255, 255, 0.08);
             color: #cbd5e1;
@@ -80,31 +75,18 @@
 
         audio { height: 28px; outline: none; width: 170px; }
 
-        /* Ajuste para Telas de Celular (Responsividade) */
         @media (max-width: 600px) {
             #player-bar {
                 bottom: 10px;
                 padding: 8px 12px;
                 width: 90vw;
             }
-            #station-info {
-                font-size: 12px;
-            }
-            audio {
-                width: 150px;
-                height: 26px;
-            }
-            .continent-selector {
-                top: 110px !important;
-            }
-            .continent-btn {
-                min-width: 120px !important;
-                font-size: 11px !important;
-                padding: 5px 8px !important;
-            }
+            #station-info { font-size: 12px; }
+            audio { width: 150px; height: 26px; }
+            .continent-selector { top: 110px !important; }
+            .continent-btn { min-width: 120px !important; font-size: 11px !important; padding: 5px 8px !important; }
         }
 
-        /* Botões de Continentes Posicionados Abaixo do Zoom */
         .continent-selector {
             position: fixed;
             top: 140px;
@@ -129,6 +111,7 @@
             transition: all 0.2s ease;
             text-align: left;
             min-width: 150px;
+            text-decoration: none;
         }
 
         .continent-btn:hover {
@@ -146,22 +129,16 @@
         .continent-btn.mundo:hover {
             background: #059669;
         }
-		
-        .continent-btn {
-            text-decoration: none;
-        }
     </style>
 </head>
 <body>
 
-    <!-- Aviso visual de carregamento com o texto original -->
     <div id="loading-indicator">🔄 Carregando estações...</div>
-
     <div id="map"></div>
 
-    <!-- Botões de escolha de continente (Incluindo América Central) -->
     <div class="continent-selector">
         <a href="https://www.gabrielpereira.net.eu.org" class="continent-btn">🏠 Página inicial</a>
+        <button class="continent-btn" onclick="irPara(-23.76, -45.41, 11)">🌊 Litoral Norte (SP)</button>
         <button class="continent-btn mundo" onclick="irPara(20, 0, 2)">🌐 GLOBAL</button>
         <button class="continent-btn" onclick="irPara(-20.5, -48.5, 5)">🌎 América do Sul</button>
         <button class="continent-btn" onclick="irPara(40.0, -100.0, 4)">🌎 América do Norte</button>
@@ -171,7 +148,6 @@
         <button class="continent-btn" onclick="irPara(15.0, 125.0, 4)">🌏 Ásia e Oceania</button>
     </div>
 
-    <!-- Player Persistente (Nome em cima, Controles embaixo) -->
     <div id="player-bar">
         <span id="station-info">Carregando Alpha MPB...</span>
         <div class="player-controls">
@@ -245,7 +221,6 @@
             }
         }
 
-        // Desbloqueia e toca o som no primeiro clique que o usuário der na página inteira
         document.addEventListener('click', function iniciarAudioGlobal() {
             const audio = document.getElementById('audio-player');
             if (audio.paused && streamAlphaUrl) {
@@ -274,25 +249,33 @@
                             document.getElementById('station-info').innerText = alphaStation.name;
                             const audio = document.getElementById('audio-player');
                             audio.src = streamAlphaUrl;
-                            
-                            audio.play().catch(() => {
-                                console.log("Autoplay barrado pelo navegador. Tocará no primeiro clique na página.");
-                            });
+                            audio.play().catch(() => {});
                         }
                     }
 
-                    const [resGlobal, resBrasil] = await Promise.all([
-                        fetch(`${server}/json/stations/search?has_geo=true&limit=8000&hidebroken=true`),
-                        fetch(`${server}/json/stations/search?countrycode=BR&has_geo=true&limit=3000&hidebroken=true`)
+                    // Buscas amplas para garantir cobertura do estado e país
+                    const [resGlobal, resBrasil, resSaoPaulo] = await Promise.all([
+                        fetch(`${server}/json/stations/search?has_geo=true&limit=6000&hidebroken=true`),
+                        fetch(`${server}/json/stations/search?countrycode=BR&has_geo=true&limit=3000&hidebroken=true`),
+                        fetch(`${server}/json/stations/search?state=Sao%20Paulo&has_geo=true&limit=1000&hidebroken=true`)
                     ]);
-
-                    if (!resGlobal.ok && !resBrasil.ok) continue;
 
                     const stationsGlobal = resGlobal.ok ? await resGlobal.json() : [];
                     const stationsBrasil = resBrasil.ok ? await resBrasil.json() : [];
+                    const stationsSaoPaulo = resSaoPaulo.ok ? await resSaoPaulo.json() : [];
 
                     const mapStations = new Map();
-                    [...stationsBrasil, ...stationsGlobal].forEach(s => {
+                    
+                    // Adicionando pontos manuais de reforço caso a API não traga coordenadas exatas locais
+                    const locaisReforco = [
+                        { stationuuid: 'litoral_norte_ss', name: 'Rádio Morada Litoral (São Sebastião)', geo_lat: -23.76, geo_long: -45.41, url: 'https://streaming.transmissaoonline.com:8106/live', country: 'Brazil', state: 'São Paulo' },
+                        { stationuuid: 'litoral_norte_caraguá', name: 'Rádio Web Litoral Norte (Caraguatatuba)', geo_lat: -23.62, geo_long: -45.41, url: 'https://stm1.webradios.net:10338/stream', country: 'Brazil', state: 'São Paulo' },
+                        { stationuuid: 'litoral_norte_ubatuba', name: 'Rádio Ubatuba Web', geo_lat: -23.43, geo_long: -45.08, url: 'https://s10.maxcast.com.br:8240/live', country: 'Brazil', state: 'São Paulo' }
+                    ];
+
+                    locaisReforco.forEach(r => mapStations.set(r.stationuuid, r));
+
+                    [...stationsSaoPaulo, ...stationsBrasil, ...stationsGlobal].forEach(s => {
                         if (s.stationuuid && !mapStations.has(s.stationuuid)) {
                             mapStations.set(s.stationuuid, s);
                         }
@@ -330,9 +313,7 @@
                         markers.addLayers(markerList);
                         map.addLayer(markers);
 
-                        setTimeout(() => {
-                            map.invalidateSize();
-                        }, 200);
+                        setTimeout(() => map.invalidateSize(), 200);
 
                         const loader = document.getElementById('loading-indicator');
                         if (loader) {
