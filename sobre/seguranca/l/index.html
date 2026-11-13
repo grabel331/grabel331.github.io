@@ -1,6 +1,339 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Titulo da Aba do Navegador</title>
+
+  <style>
+    /* ==========================================================================
+       1. CORES E FUNDO GERAL (Onde mudar as cores principais do site)
+       ========================================================================== */
+    :root {
+      --cor-fundo: #151515;          /* Fundo escuro principal */
+      --cor-texto: #eaeaea;          /* Texto comum cinza claro */
+      --cor-destaque: #b5e853;       /* Verde neon clássico (títulos e detalhes) */
+      --cor-link: #63c0f5;           /* Azul claro dos links */
+      --cor-borda: #b5e853;          /* Borda tracejada do cabeçalho */
+      --cor-caixa-codigo: rgba(0, 0, 0, 0.9); /* Fundo preto das caixas de fingerprint */
+      --borda-caixa-codigo: rgba(255, 255, 255, 0.15);
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--cor-fundo);
+      /* Efeito sutil de textura/grade no fundo igual ao original */
+      background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
+      background-size: 20px 20px;
+      color: var(--cor-texto);
+      font-size: 16px;
+      line-height: 1.5;
+      font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal, monospace;
+    }
+
+    /* Largura máxima do conteúdo centralizado */
+    .container {
+      width: 90%;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* ==========================================================================
+       2. CABEÇALHO SUPERIOR (Onde fica o título principal e a linha tracejada)
+       ========================================================================== */
+    header {
+      background: rgba(0, 0, 0, 0.1);
+      width: 100%;
+      border-bottom: 1px dashed var(--cor-borda);
+      padding: 20px 0;
+      margin: 0 0 40px 0;
+    }
+
+    header a.header {
+      text-decoration: none;
+    }
+
+    /* Título Grande Principal com o "./ " antes */
+    header h1 {
+      font-size: 30px;
+      line-height: 1.5;
+      margin: 0 0 0 -40px;
+      font-weight: bold;
+      color: var(--cor-destaque);
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1),
+                   0 0 5px rgba(181, 232, 83, 0.1),
+                   0 0 10px rgba(181, 232, 83, 0.1);
+      letter-spacing: -1px;
+    }
+
+    header h1:before {
+      content: "./ ";
+      font-size: 24px;
+    }
+
+    /* Subtítulo cinza logo abaixo do título principal */
+    header h2 {
+      font-size: 18px;
+      font-weight: 300;
+      color: #666;
+      margin: 5px 0 0 0;
+    }
+
+    /* ==========================================================================
+       3. TÍTULOS DAS SEÇÕES E TEXTOS (H2, H3, Parágrafos e Listas)
+       ========================================================================== */
+    #main_content {
+      width: 100%;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    section img {
+      max-width: 100%;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: normal;
+      color: var(--cor-destaque);
+      letter-spacing: -0.03em;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1),
+                   0 0 5px rgba(181, 232, 83, 0.1),
+                   0 0 10px rgba(181, 232, 83, 0.1);
+    }
+
+    #main_content h1 { font-size: 30px; }
+    #main_content h2 { font-size: 24px; margin-top: 35px; }
+    #main_content h3 { font-size: 18px; margin-top: 25px; }
+    #main_content h4 { font-size: 14px; color: #999; margin-top: -10px; }
+
+    p {
+      margin-bottom: 18px;
+    }
+
+    /* Links azuis com brilho suave */
+    a {
+      color: var(--cor-link);
+      text-shadow: 0 0 5px rgba(104, 182, 255, 0.5);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* Listas com marcador estilo ">>" verde */
+    ul {
+      list-style: none;
+      padding-left: 20px;
+    }
+
+    ul li {
+      margin-bottom: 8px;
+      position: relative;
+    }
+
+    ul li:before {
+      content: ">>";
+      color: var(--cor-destaque);
+      position: absolute;
+      left: -22px;
+      font-size: 13px;
+    }
+
+    /* ==========================================================================
+       4. CAIXINHAS DE FINGERPRINT / CÓDIGO (Com relevo e botão de copiar)
+       ========================================================================== */
+    .highlight {
+      background: var(--cor-caixa-codigo);
+      border: 1px solid var(--borda-caixa-codigo);
+      padding: 12px 15px;
+      border-radius: 2px;
+      margin: 15px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.8); /* Relevo interno escuro */
+      overflow-x: auto;
+    }
+
+    pre {
+      margin: 0;
+      color: #f8f8f2;
+      font-size: 14px;
+      font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal, monospace;
+    }
+
+    /* Código inline (ex: mich@ dentro do texto) */
+    code.highlighter-rouge {
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 1px 5px;
+      border-radius: 2px;
+      color: #aa759f; /* Tom roxo/lilás característico do tema */
+    }
+
+    /* Botão discreto de copiar dentro da caixinha */
+    .btn-copiar {
+      background: #222;
+      color: var(--cor-destaque);
+      border: 1px solid #444;
+      padding: 4px 10px;
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 2px;
+      margin-left: 15px;
+      flex-shrink: 0;
+      transition: 0.2s;
+    }
+
+    .btn-copiar:hover {
+      background: var(--cor-destaque);
+      color: #151515;
+      border-color: var(--cor-destaque);
+    }
+
+    /* ==========================================================================
+       5. RODAPÉ
+       ========================================================================== */
+    footer {
+      border-top: 1px dashed #333;
+      margin-top: 60px;
+      padding: 25px 0 40px 0;
+      font-size: 13px;
+      color: #666;
+    }
+
+    /* Ajuste para celular */
+    @media (max-width: 768px) {
+      header h1 {
+        margin-left: 0;
+        font-size: 24px;
+      }
+      .highlight {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .btn-copiar {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ========================================================================
+       CABEÇALHO DO SITE (Título principal e descrição curta)
+       ======================================================================== -->
+  <header>
+    <a class="header" href="#">
+      <div class="container">
+        <h1>Titulo Principal Aqui</h1>
+        <h2>Subtitulo ou frase de descricao curta do seu site aqui.</h2>
+      </div>
+    </a>
+  </header>
+
+  <!-- ========================================================================
+       CONTEÚDO PRINCIPAL
+       ======================================================================== -->
+  <div class="container">
+    <section id="main_content">
+
+      <!-- SEÇÃO 1: TÍTULO E LISTA -->
+      <h2>Titulo da Secao Aqui</h2>
+      <p>Texto normal aqui. Voce pode escrever paragrafos explicando o seu projeto, servicos ou ideias:</p>
+
+      <ul>
+        <li>Item da lista 1 com marcador verde</li>
+        <li>Item da lista 2 com <a href="#">Link Azul Brilhante</a></li>
+        <li>Item da lista 3</li>
+      </ul>
+
+      <!-- SEÇÃO 2: SUBTÍTULOS E TEXTO -->
+      <h3>Subtitulo Menor Aqui</h3>
+      <h4>Cargo, data ou detalhe em cinza aqui</h4>
+      <p>Mais texto explicativo aqui. Se quiser destacar uma palavra como se fosse codigo no meio da frase, use assim: <code class="highlighter-rouge">exemplo@dominio.com</code>.</p>
+
+      <!-- SEÇÃO 3: CAIXINHA DE FINGERPRINT / CÓDIGO COM RELEVO -->
+      <p>Exemplo de caixinha escura com relevo para fingerprints, chaves ou comandos:</p>
+
+      <div class="highlight">
+        <pre><code id="fp-1">6B52 7FE5 6308 5B7A 34B9  6C2F 8F90 3F3E 5662 199B</code></pre>
+        <button class="btn-copiar" onclick="copiarTexto('fp-1', this)">Copiar</button>
+      </div>
+
+      <!-- Segunda caixinha de exemplo (basta mudar o id="fp-2") -->
+      <div class="highlight">
+        <pre><code id="fp-2">contato[arroba]seudominio[ponto]com</code></pre>
+        <button class="btn-copiar" onclick="copiarTexto('fp-2', this)">Copiar</button>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- ========================================================================
+       RODAPÉ DO SITE
+       ======================================================================== -->
+  <footer>
+    <div class="container">
+      &copy; <span id="ano-atual"></span> Seu Nome ou Projeto<br>
+      <a href="#">Link 1</a> |
+      <a href="#">Link 2</a> |
+      <a href="#">GitHub</a>
+    </div>
+  </footer>
+
+  <!-- ========================================================================
+       JAVASCRIPT (Ano automático no rodapé + Botão de copiar das caixinhas)
+       ======================================================================== -->
+  <script>
+    // Coloca o ano atual automaticamente no rodapé
+    document.getElementById("ano-atual").textContent = new Date().getFullYear();
+
+    // Função que copia o texto das caixinhas de fingerprint
+    function copiarTexto(idElemento, botao) {
+      const texto = document.getElementById(idElemento).innerText;
+      navigator.clipboard.writeText(texto).then(() => {
+        const original = botao.innerText;
+        botao.innerText = "Copiado!";
+        setTimeout(() => {
+          botao.innerText = original;
+        }, 1500);
+      });
+    }
+  </script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#####old
+
+
+
+
+
+<!-- DOCTYPE html>
+<html lang="pt-BR">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sobre</title>
@@ -37,22 +370,22 @@
 </head>
 <body>
 
-  <!-- Menu de Navegação -->
+  
   <nav>
     <a href="https://gabrielpereira.net.eu.org/">Home</a>
     <!--
     <a href="https://gabrielpereira.net.eu.org/noticia">Notícias</a>
     <a href="https://gabrielpereira.net.eu.org/radioglobal">Rádio Global</a>
--->	
+
   </nav>
 
   <!-- Conteúdo Principal -->
-  <main>
+  <!--  <main>
   
   
   
   <center> #laboratorio fantasma </center>
-  <!--   <img src="perereca-de-alcatrazes.avif" width="75" height="75" alt="Perereca-de-alcatrazes"><br>
+   <img src="perereca-de-alcatrazes.avif" width="75" height="75" alt="Perereca-de-alcatrazes"><br>
 	
    
     <p>
@@ -66,8 +399,8 @@
     <br><br>
 
     <h2>Conteúdo Principal</h2>
-    <p>Coloque aqui seus textos, imagens, tabelas, etc.</p>-->
+    <p>Coloque aqui seus textos, imagens, tabelas, etc.</p>
   </main>
 
 </body>
-</html>
+</html>-->
