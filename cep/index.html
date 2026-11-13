@@ -188,19 +188,7 @@
   Mecanismo de busca de endereços <a href="https://nominatim.org/" target="_blank" style="color: #ffffff; text-decoration: underline;">Nominatim</a>
   <br> Mecanismo de busca CEP (Brasil) <a href="https://viacep.com.br/" target="_blank" style="color: #ffffff; text-decoration: underline;">ViaCEP</a>
 </span>    
-	
-  
-    
 </span>
-
-		
-        
-     
-        
-        
-        </span>
-        
-        <span id="address-info"> <a href="htNominatimtps://nominatim.org/" target="_blank" style="color: #ffffff;"></a></span>
         
         <div class="search-controls">
             <input type="text" id="cep-input" placeholder="CEP ou Endereço" autocomplete="off">
@@ -239,12 +227,19 @@
         const inputCep = document.getElementById('cep-input');
         const suggestionsBox = document.getElementById('suggestions-list');
 
-        // Formatação automática do CEP e busca de sugestões
+        function normalizarTexto(texto) {
+            return texto
+                .toString()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase()
+                .trim();
+        }
+
         inputCep.addEventListener('input', function (e) {
             let valor = e.target.value;
             let apenasNums = valor.replace(/\D/g, "");
 
-            // Formatação de CEP se tiver até 8 números
             if (apenasNums.length <= 8 && !isNaN(valor.replace('-', ''))) {
                 if (apenasNums.length > 5) {
                     inputCep.value = apenasNums.substring(0, 5) + '-' + apenasNums.substring(5, 8);
@@ -253,7 +248,6 @@
                 }
             }
 
-            // Exibir sugestões se houver mais de 2 caracteres digitados
             clearTimeout(timeoutSugestoes);
             if (valor.trim().length >= 3) {
                 timeoutSugestoes = setTimeout(() => buscarSugestoes(valor.trim()), 300);
@@ -269,7 +263,6 @@
             }
         });
 
-        // Fecha as sugestões ao clicar fora
         document.addEventListener('click', function(e) {
             if (!document.getElementById('search-bar').contains(e.target)) {
                 fecharSugestoes();
@@ -281,13 +274,11 @@
             suggestionsBox.innerHTML = '';
         }
 
-        // Sugestões em tempo real considerando tanto texto quanto CEP
         async function buscarSugestoes(query) {
             try {
                 let searchTerm = query;
                 let apenasNums = query.replace(/\D/g, "");
                 
-                // Se o usuário estiver digitando um CEP, consultamos o ViaCEP para sugerir o endereço completo
                 if (apenasNums.length >= 5) {
                     const resCep = await fetch(`https://viacep.com.br/ws/${apenasNums}/json/`);
                     const dataCep = await resCep.json();
@@ -296,19 +287,26 @@
                     }
                 }
 
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&countrycodes=br&limit=5`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&countrycodes=br&limit=10`);
                 const data = await res.json();
 
                 if (data && data.length > 0) {
+                    const termoNormalizado = normalizarTexto(query);
+                    const dadosFiltrados = data.filter(item => 
+                        normalizarTexto(item.display_name).includes(termoNormalizado)
+                    );
+
+                    const resultadosParaExibir = dadosFiltrados.length > 0 ? dadosFiltrados : data;
+
                     suggestionsBox.innerHTML = '';
-                    data.forEach(item => {
+                    resultadosParaExibir.slice(0, 5).forEach(item => {
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
                         div.innerText = item.display_name;
                         div.onclick = () => {
                             inputCep.value = item.display_name.split(',')[0];
                             fecharSugestoes();
-                            selecionarLocal(parseFloat(item.lat), parseFloat(item.lon), item.display_name, 16);
+                            processarResultadoLocal(item);
                         };
                         suggestionsBox.appendChild(div);
                     });
@@ -321,7 +319,6 @@
             }
         }
 
-        // Função unificada de busca inteligente (Trata CEP e Ruas perfeitamente)
         async function executarBusca() {
             let termo = inputCep.value.trim();
             const infoText = document.getElementById('address-info');
@@ -333,29 +330,25 @@
             let apenasNums = termo.replace(/\D/g, "");
             let queryBusca = termo;
 
-            // Se for CEP válido de 8 dígitos, consultamos o ViaCEP para obter o endereço estruturado exato
             if (apenasNums.length === 8) {
                 try {
                     const resCep = await fetch(`https://viacep.com.br/ws/${apenasNums}/json/`);
                     const dataCep = await resCep.json();
                     
                     if (!dataCep.erro) {
-                        // Monta o endereço otimizado para o mapa
                         queryBusca = `${dataCep.logradouro}, ${dataCep.bairro}, ${dataCep.localidade} - ${dataCep.uf}, Brasil`;
                     }
                 } catch (e) {
                     console.warn("Erro ao consultar ViaCEP, buscando direto...");
                 }
             } else {
-                queryBusca = termo.toLowerCase().includes('brasil') ? termo : `${termo}, Brasil`;
+                queryBusca = normalizarTexto(termo).includes('brasil') ? termo : `${termo}, Brasil`;
             }
 
             try {
-                // Tenta achar a rua exata
                 let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryBusca)}&countrycodes=br&limit=1`);
                 let data = await res.json();
 
-                // Se falhar e for busca por CEP, tenta buscar apenas por Bairro/Cidade ou pelo próprio número do CEP no mapa
                 if ((!data || data.length === 0) && apenasNums.length === 8) {
                     const resCepFallback = await fetch(`https://viacep.com.br/ws/${apenasNums}/json/`);
                     const dataCepFallback = await resCepFallback.json();
@@ -367,7 +360,7 @@
                 }
 
                 if (data && data.length > 0) {
-                    selecionarLocal(parseFloat(data[0].lat), parseFloat(data[0].lon), data[0].display_name, 16);
+                    processarResultadoLocal(data[0]);
                 } else {
                     infoText.innerText = "⚠️ Endereço ou CEP não encontrado.";
                 }
@@ -377,7 +370,14 @@
             }
         }
 
-        function selecionarLocal(lat, lon, nomeCompleto, zoom) {
+        // Função inteligente para ajustar o zoom dependendo se é cidade, estado ou rua
+        function processarResultadoLocal(item) {
+            const lat = parseFloat(item.lat);
+            const lon = parseFloat(item.lon);
+            const nomeCompleto = item.display_name;
+            const tipo = item.type;       // Ex: 'administrative', 'city', 'residential', 'road', etc.
+            const categoria = item.class; // Ex: 'boundary', 'place', 'highway'
+
             const infoText = document.getElementById('address-info');
             infoText.innerText = nomeCompleto;
 
@@ -385,14 +385,26 @@
                 map.removeLayer(marcadorAtual);
             }
 
-            marcadorAtual = L.marker([lat, lon], { icon: pinIcon }).addTo(map);
-            marcadorAtual.bindPopup(`<b>Local Encontrado</b><br>${nomeCompleto}`).openPopup();
-            
-            map.flyTo([lat, lon], zoom, { duration: 1.5 });
+            // Se o Nominatim fornecer a caixa delimitadora (boundingbox), podemos usá-la se for uma região ampla
+            if (item.boundingbox && (categoria === 'boundary' || tipo === 'administrative' || tipo === 'city' || tipo === 'municipality' || tipo === 'state')) {
+                const bb = item.boundingbox; // [latMin, latMax, lonMin, lonMax]
+                const southWest = L.latLng(parseFloat(bb[0]), parseFloat(bb[2]));
+                const northEast = L.latLng(parseFloat(bb[1]), parseFloat(bb[3]));
+                const bounds = L.latLngBounds(southWest, northEast);
+
+                // Ajusta o mapa para enquadrar perfeitamente os limites da cidade/região
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13, duration: 1.5 });
+
+                marcadorAtual = L.marker([lat, lon], { icon: pinIcon }).addTo(map);
+                marcadorAtual.bindPopup(`<b>Região Encontrada</b><br>${nomeCompleto}`);
+            } else {
+                // Para ruas, bairros específicos ou CEPs, usa o zoom detalhado de nível 16
+                marcadorAtual = L.marker([lat, lon], { icon: pinIcon }).addTo(map);
+                marcadorAtual.bindPopup(`<b>Local Encontrado</b><br>${nomeCompleto}`).openPopup();
+                
+                map.flyTo([lat, lon], 16, { duration: 1.5 });
+            }
         }
     </script>
-    
-  
 </body>
-
 </html>
