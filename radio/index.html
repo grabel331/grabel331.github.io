@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rádio</title>
+    <title>Rádio Global</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
@@ -15,7 +15,7 @@
         
         #map { width: 100vw; height: 100vh; }
 
-        /* Indicador de Carregamento com o texto original e abaixo do meio */
+        /* Indicador de Carregamento */
         #loading-indicator {
             position: fixed; top: 60%; left: 50%; transform: translateX(-50%);
             background: rgba(16, 185, 129, 0.9); color: #fff; padding: 6px 16px;
@@ -24,18 +24,18 @@
             transition: opacity 0.3s ease;
         }
 
-        /* Player Flutuante (Nome em cima, Controles embaixo) */
+        /* Player Flutuante Compacto */
         #player-bar {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.95); color: #fff; padding: 10px 16px;
+            background: rgba(15, 23, 42, 0.95); color: #fff; padding: 10px 14px;
             border-radius: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px;
             z-index: 1000; border: 1px solid rgba(255,255,255,0.15);
             box-shadow: 0 10px 30px rgba(0,0,0,0.7); backdrop-filter: blur(8px);
             max-width: 95vw;
-            width: 280px;
+            width: 350px;
         }
         
-        /* Linha superior: Nome da estação bem legível */
+        /* Linha superior: Nome da estação */
         #station-info { 
             font-size: 13px; 
             font-weight: 600; 
@@ -47,51 +47,78 @@
             color: #10b981; 
         }
 
-        /* Linha inferior: Botões e Player de Áudio alinhados */
+        /* Linha inferior: Botões e Player integrados */
         .player-controls {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
             width: 100%;
         }
         
-        /* Botões de Troca de Estação Sutis (Anterior e Próximo) */
+        /* Botões de Navegação e Random */
         .station-nav-btn {
             background: rgba(255, 255, 255, 0.08);
             color: #cbd5e1;
             border: 1px solid rgba(255, 255, 255, 0.15);
-            width: 28px;
             height: 28px;
-            border-radius: 50%;
-            font-size: 12px;
+            border-radius: 14px;
+            font-size: 11px;
+            font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
             flex-shrink: 0;
+            padding: 0 8px;
+            gap: 5px;
         }
+
+        .station-nav-btn.icon-only {
+            width: 28px;
+            padding: 0;
+            border-radius: 50%;
+            font-size: 12px;
+        }
+
         .station-nav-btn:hover {
             background: #10b981;
             color: #fff;
             border-color: #10b981;
         }
 
-        audio { height: 28px; outline: none; width: 170px; }
+        /* Estilo quando o Aleatório estiver ativado */
+        .station-nav-btn.random-ativo {
+            background: #2563eb !important;
+            color: #fff !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+        }
 
-        /* Ajuste para Telas de Celular (Responsividade) */
+        audio { height: 28px; outline: none; width: 140px; }
+
+        /* Ajuste para Telas de Celular */
         @media (max-width: 600px) {
             #player-bar {
                 bottom: 10px;
-                padding: 8px 12px;
-                width: 90vw;
+                padding: 8px 10px;
+                width: 95vw;
             }
             #station-info {
                 font-size: 12px;
             }
             audio {
-                width: 150px;
+                width: 110px;
+                height: 26px;
+            }
+            .station-nav-btn {
+                font-size: 10px;
+                padding: 0 6px;
+                height: 26px;
+            }
+            .station-nav-btn.icon-only {
+                width: 26px;
                 height: 26px;
             }
             .continent-selector {
@@ -104,7 +131,7 @@
             }
         }
 
-        /* Botões de Continentes Posicionados Abaixo do Zoom */
+        /* Botões de Continentes */
         .continent-selector {
             position: fixed;
             top: 140px;
@@ -129,6 +156,7 @@
             transition: all 0.2s ease;
             text-align: left;
             min-width: 150px;
+            text-decoration: none;
         }
 
         .continent-btn:hover {
@@ -146,23 +174,19 @@
         .continent-btn.mundo:hover {
             background: #059669;
         }
-		
-        .continent-btn {
-            text-decoration: none;
-        }
     </style>
 </head>
 <body>
 
-    <!-- Aviso visual de carregamento com o texto original -->
+    <!-- Aviso visual de carregamento -->
     <div id="loading-indicator">🔄 Carregando estações...</div>
 
     <div id="map"></div>
 
-    <!-- Botões de escolha de continente (Incluindo América Central) -->
+    <!-- Botões de escolha de continente -->
     <div class="continent-selector">
         <a href="https://www.gabrielpereira.net.eu.org" class="continent-btn">🏠 Página inicial</a>
-        <button class="continent-btn mundo" onclick="irPara(20, 0, 2)">🌐 GLOBAL</button>
+        <button class="continent-btn mundo" onclick="irPara(20, 0, 2)">🌍 GLOBAL</button>
         <button class="continent-btn" onclick="irPara(-20.5, -48.5, 5)">🌎 América do Sul</button>
         <button class="continent-btn" onclick="irPara(40.0, -100.0, 4)">🌎 América do Norte</button>
         <button class="continent-btn" onclick="irPara(15.0, -88.0, 5)">🌎 América Central</button>
@@ -171,13 +195,16 @@
         <button class="continent-btn" onclick="irPara(15.0, 125.0, 4)">🌏 Ásia e Oceania</button>
     </div>
 
-    <!-- Player Persistente (Nome em cima, Controles embaixo) -->
+    <!-- Player Persistente com o Globo 🌍 e o status OFF / ON visíveis -->
     <div id="player-bar">
         <span id="station-info">Carregando Alpha MPB...</span>
         <div class="player-controls">
-            <button class="station-nav-btn" onclick="mudarEstacao(-1)" title="Estação Anterior">◀</button>
+            <button id="random-toggle-btn" class="station-nav-btn" onclick="toggleRandomMode()" title="Alternar modo aleatório">
+                🌍 OFF
+            </button>
+            <button class="station-nav-btn icon-only" onclick="mudarEstacao(-1)" title="Estação Anterior">◀</button>
             <audio id="audio-player" controls></audio>
-            <button class="station-nav-btn" onclick="mudarEstacao(1)" title="Próxima Estação">▶</button>
+            <button class="station-nav-btn icon-only" onclick="mudarEstacao(1)" title="Próxima Estação">▶</button>
         </div>
     </div>
 
@@ -215,6 +242,20 @@
         let listaEstacoes = [];
         let indiceAtual = 0;
         let streamAlphaUrl = '';
+        let isRandomMode = false; // Desligado por padrão (prioriza SP)
+
+        // Função para alternar o modo Aleatório e atualizar o texto do botão com o globo e o estado
+        function toggleRandomMode() {
+            isRandomMode = !isRandomMode;
+            const btn = document.getElementById('random-toggle-btn');
+            if (isRandomMode) {
+                btn.innerHTML = '🌍 ON';
+                btn.classList.add('random-ativo');
+            } else {
+                btn.innerHTML = '🌍 OFF';
+                btn.classList.remove('random-ativo');
+            }
+        }
 
         function tratarStreamUrl(station) {
             let rawUrl = station.url_resolved || station.url;
@@ -225,27 +266,62 @@
             return rawUrl;
         }
 
-        function mudarEstacao(direcao) {
-            if (listaEstacoes.length === 0) return;
-            indiceAtual = (indiceAtual + direcao + listaEstacoes.length) % listaEstacoes.length;
-            const station = listaEstacoes[indiceAtual];
-            
+        function tocarEstacao(station) {
             const streamUrl = tratarStreamUrl(station);
-            if (streamUrl) {
-                document.getElementById('station-info').innerText = station.name;
-                const audio = document.getElementById('audio-player');
-                audio.src = streamUrl;
-                audio.play().catch(err => console.log("Erro ao reproduzir:", err));
-                
-                const lat = parseFloat(station.geo_lat);
-                const lng = parseFloat(station.geo_long);
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    map.flyTo([lat, lng], 11, { duration: 1.0 });
-                }
+            if (!streamUrl) return;
+
+            document.getElementById('station-info').innerText = station.name;
+            const audio = document.getElementById('audio-player');
+            audio.src = streamUrl;
+            audio.play().catch(err => console.log("Erro ao reproduzir:", err));
+
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: station.name,
+                    artist: station.state ? `${station.state} - ${station.country || 'Brasil'}` : (station.country || 'Rádio Global'),
+                    album: 'Rádio'
+                });
+            }
+
+            const lat = parseFloat(station.geo_lat);
+            const lng = parseFloat(station.geo_long);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                map.flyTo([lat, lng], 11, { duration: 1.0 });
             }
         }
 
-        // Desbloqueia e toca o som no primeiro clique que o usuário der na página inteira
+        function mudarEstacao(direcao) {
+            if (listaEstacoes.length === 0) return;
+
+            if (isRandomMode) {
+                if (listaEstacoes.length > 1) {
+                    let novoIndice;
+                    do {
+                        novoIndice = Math.floor(Math.random() * listaEstacoes.length);
+                    } while (novoIndice === indiceAtual);
+                    indiceAtual = novoIndice;
+                } else {
+                    indiceAtual = 0;
+                }
+            } else {
+                const radiosSP = listaEstacoes.filter(s => 
+                    (s.state && s.state.toLowerCase().includes('são paulo')) ||
+                    (s.state && s.state.toLowerCase().includes('sao paulo'))
+                );
+
+                if (radiosSP.length > 0) {
+                    const stationSP = radiosSP[Math.floor(Math.random() * radiosSP.length)];
+                    const encontrado = listaEstacoes.findIndex(s => s.stationuuid === stationSP.stationuuid);
+                    if (encontrado !== -1) indiceAtual = encontrado;
+                } else {
+                    indiceAtual = Math.floor(Math.random() * listaEstacoes.length);
+                }
+            }
+
+            const station = listaEstacoes[indiceAtual];
+            tocarEstacao(station);
+        }
+
         document.addEventListener('click', function iniciarAudioGlobal() {
             const audio = document.getElementById('audio-player');
             if (audio.paused && streamAlphaUrl) {
@@ -265,7 +341,7 @@
             for (let server of apiServers) {
                 try {
                     const resAlpha = await fetch(`${server}/json/stations/search?name=Alpha%20MPB&limit=5&hidebroken=true`);
-                    const stationsAlpha = resAlpha.ok ? await resAlpha.json() : [];
+                    const stationsAlpha = resAlpha.resAlpha ? [] : (resAlpha.ok ? await resAlpha.json() : []);
                     
                     if (stationsAlpha.length > 0) {
                         const alphaStation = stationsAlpha.find(s => s.url_resolved || s.url);
@@ -275,8 +351,16 @@
                             const audio = document.getElementById('audio-player');
                             audio.src = streamAlphaUrl;
                             
+                            if ('mediaSession' in navigator) {
+                                navigator.mediaSession.metadata = new MediaMetadata({
+                                    title: alphaStation.name,
+                                    artist: 'Alpha MPB',
+                                    album: 'Rádio'
+                                });
+                            }
+
                             audio.play().catch(() => {
-                                console.log("Autoplay barrado pelo navegador. Tocará no primeiro clique na página.");
+                                console.log("Autoplay barrado pelo navegador.");
                             });
                         }
                     }
@@ -309,16 +393,9 @@
                             const marker = L.marker([lat, lng], { icon: radioIcon });
                             
                             marker.on('click', () => {
-                                const streamUrl = tratarStreamUrl(station);
-                                if (streamUrl) {
-                                    document.getElementById('station-info').innerText = station.name;
-                                    const audio = document.getElementById('audio-player');
-                                    audio.src = streamUrl;
-                                    audio.play().catch(err => console.log("Erro ao reproduzir:", err));
-                                    
-                                    const encontrado = listaEstacoes.findIndex(s => s.stationuuid === station.stationuuid);
-                                    if (encontrado !== -1) indiceAtual = encontrado;
-                                }
+                                tocarEstacao(station);
+                                const encontrado = listaEstacoes.findIndex(s => s.stationuuid === station.stationuuid);
+                                if (encontrado !== -1) indiceAtual = encontrado;
                             });
 
                             marker.bindTooltip(`<b>${station.name}</b><br>${station.state || ''} - ${station.country || ''}`, { direction: 'top' });
