@@ -57,6 +57,46 @@ iframe {
   background: rgba(34, 34, 34, 0.9);
 }
 
+/* Caixa de aviso / Tutorial para celular */
+#mobile-tip {
+  display: none; /* Por padrão fica oculta, o script exibe só se for celular */
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  width: 90%;
+  max-width: 400px;
+  background: rgba(20, 20, 20, 0.95);
+  color: #fff;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #444;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+#mobile-tip b {
+  color: #4da6ff;
+}
+
+#mobile-tip button {
+  margin-top: 10px;
+  background: #0066cc;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#mobile-tip button:hover {
+  background: #0052a3;
+}
+
 /* Ajuste extra para telas muito pequenas */
 @media (max-width: 480px) {
   .continent-btn {
@@ -75,14 +115,40 @@ iframe {
   <a href="https://www.gabrielpereira.net.eu.org" class="continent-btn">🏠 Página inicial</a>
 </div>
 
-<!-- Iframe do Solar System Scope com suporte a hardware gráfico -->
+<!-- Aviso educativo para usuários de celular -->
+<div id="mobile-tip">
+  🌌 <b>Dica para usar no celular:</b><br>
+  Para abrir o simulador sem baixar o app, toque nos <b>três pontinhos (⋮)</b> no canto superior direito do seu navegador Chrome e marque a opção <b>"Para computador"</b> (Desktop site).
+  <br>
+  <button onclick="fecharAviso()">Entendido</button>
+</div>
+
+<!-- Iframe do Solar System Scope -->
 <iframe
   id="solarsystem"
   src="https://www.solarsystemscope.com/iframe"
   title="Solar System Scope - Modelo Interativo"
-  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
   allowfullscreen>
 </iframe>
+
+<script>
+  // Detecta se é um dispositivo móvel (Android/iPhone)
+  function isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
+
+  // Se for celular, exibe o aviso automaticamente ao carregar a página
+  window.onload = function() {
+    if (isMobile()) {
+      document.getElementById('mobile-tip').style.display = 'block';
+    }
+  };
+
+  // Função para fechar o aviso quando o usuário clicar em "Entendido"
+  function fecharAviso() {
+    document.getElementById('mobile-tip').style.display = 'none';
+  }
+</script>
 
 </body>
 </html>
