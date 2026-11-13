@@ -11,29 +11,146 @@
        1. CORES E FUNDO GERAL (Onde mudar as cores principais do site)
        ========================================================================== */
     :root {
-      --cor-fundo: #151515;          /* Fundo escuro principal */
-      --cor-texto: #eaeaea;          /* Texto comum cinza claro */
-      --cor-destaque: #b5e853;       /* Verde neon clássico (títulos e detalhes) */
-      --cor-link: #63c0f5;           /* Azul claro dos links */
-      --cor-borda: #b5e853;          /* Borda tracejada do cabeçalho */
-      --cor-caixa-codigo: rgba(0, 0, 0, 0.9); /* Fundo preto das caixas de fingerprint */
+      /* Padrão inicial alterado para NEON */
+      --cor-fundo: #0d0f12;          
+      --cor-texto: #eaeaea;          
+      --cor-destaque: #b5e853;       
+      --cor-link: #63c0f5;           
+      --cor-borda: #b5e853;          
+      --cor-caixa-codigo: rgba(0, 0, 0, 0.9); 
       --borda-caixa-codigo: rgba(255, 255, 255, 0.15);
+      
+      /* Padrão inicial (HOME): Pontilhado Neon */
+      --fundo-arte: radial-gradient(rgba(181, 232, 83, 0.1) 1px, transparent 1px), 
+                    radial-gradient(rgba(104, 182, 255, 0.07) 1px, transparent 1px);
+      --tamanho-arte: 25px 25px;
     }
 
     body {
       margin: 0;
       padding: 0;
-      background: var(--cor-fundo);
-      /* Efeito sutil de textura/grade no fundo igual ao original */
-      background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
-      background-size: 20px 20px;
+      background-color: var(--cor-fundo);
+      background-image: var(--fundo-arte);
+      background-size: var(--tamanho-arte);
       color: var(--cor-texto);
       font-size: 16px;
       line-height: 1.5;
       font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal, monospace;
+      transition: background 0.4s ease, color 0.4s ease;
     }
 
-    /* Largura máxima do conteúdo centralizado */
+    /* ==========================================================================
+       BOTÃO HOME / RÉGUA (Canto Superior Esquerdo)
+       ========================================================================== */
+    .btn-home-container {
+      position: fixed;
+      top: 15px;
+      left: 20px;
+      z-index: 9999;
+    }
+
+    .btn-home {
+      background: rgba(20, 20, 25, 0.85);
+      color: var(--cor-destaque);
+      border: 1px solid rgba(181, 232, 83, 0.4);
+      width: 36px;
+      height: 36px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      transition: 0.2s;
+    }
+
+    .btn-home:hover {
+      background: var(--cor-destaque);
+      color: #050508;
+      border-color: var(--cor-destaque);
+    }
+
+    /* ==========================================================================
+       MENU SUSPENSO DISCRETO DE TEMAS (Canto Superior Direito)
+       ========================================================================== */
+    .menu-temas-container {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      z-index: 9999;
+      font-family: inherit;
+    }
+
+    .btn-toggle-temas {
+      background: rgba(20, 20, 25, 0.85);
+      color: var(--cor-destaque);
+      border: 1px solid rgba(181, 232, 83, 0.4);
+      width: 36px;
+      height: 36px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      transition: 0.2s;
+    }
+
+    .btn-toggle-temas:hover {
+      background: var(--cor-destaque);
+      color: #050508;
+      border-color: var(--cor-destaque);
+    }
+
+    .dropdown-temas {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 42px;
+      background: rgba(10, 10, 15, 0.95);
+      border: 1px solid rgba(181, 232, 83, 0.3);
+      border-radius: 4px;
+      width: 150px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+      backdrop-filter: blur(6px);
+      padding: 6px 0;
+    }
+
+    .dropdown-temas.ativo {
+      display: block;
+    }
+
+    .dropdown-titulo {
+      font-size: 11px;
+      color: #888;
+      padding: 6px 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 4px;
+      text-align: center;
+    }
+
+    .dropdown-temas button {
+      width: 100%;
+      background: transparent;
+      color: #ccc;
+      border: none;
+      padding: 8px 12px;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      transition: 0.2s;
+    }
+
+    .dropdown-temas button:hover {
+      background: rgba(181, 232, 83, 0.15);
+      color: var(--cor-destaque);
+    }
+
     .container {
       width: 90%;
       max-width: 1000px;
@@ -41,21 +158,20 @@
     }
 
     /* ==========================================================================
-       2. CABEÇALHO SUPERIOR (Onde fica o título principal e a linha tracejada)
+       2. CABEÇALHO SUPERIOR
        ========================================================================== */
     header {
       background: rgba(0, 0, 0, 0.1);
       width: 100%;
       border-bottom: 1px dashed var(--cor-borda);
       padding: 20px 0;
-      margin: 0 0 40px 0;
+      margin: 30px 0 40px 0;
     }
 
     header a.header {
       text-decoration: none;
     }
 
-    /* Título Grande Principal com o "./ " antes */
     header h1 {
       font-size: 30px;
       line-height: 1.5;
@@ -73,7 +189,6 @@
       font-size: 24px;
     }
 
-    /* Subtítulo cinza logo abaixo do título principal */
     header h2 {
       font-size: 18px;
       font-weight: 300;
@@ -82,15 +197,11 @@
     }
 
     /* ==========================================================================
-       3. TÍTULOS DAS SEÇÕES E TEXTOS (H2, H3, Parágrafos e Listas)
+       3. TÍTULOS DAS SEÇÕES E TEXTOS
        ========================================================================== */
     #main_content {
       width: 100%;
       -webkit-font-smoothing: antialiased;
-    }
-
-    section img {
-      max-width: 100%;
     }
 
     h1, h2, h3, h4, h5, h6 {
@@ -111,7 +222,6 @@
       margin-bottom: 18px;
     }
 
-    /* Links azuis com brilho suave */
     a {
       color: var(--cor-link);
       text-shadow: 0 0 5px rgba(104, 182, 255, 0.5);
@@ -122,7 +232,6 @@
       text-decoration: underline;
     }
 
-    /* Listas com marcador estilo ">>" verde */
     ul {
       list-style: none;
       padding-left: 20px;
@@ -142,7 +251,7 @@
     }
 
     /* ==========================================================================
-       4. CAIXINHAS DE FINGERPRINT / CÓDIGO (Com relevo e botão de copiar)
+       4. CAIXINHAS DE CÓDIGO / FINGERPRINT
        ========================================================================== */
     .highlight {
       background: var(--cor-caixa-codigo);
@@ -153,7 +262,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.8); /* Relevo interno escuro */
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
       overflow-x: auto;
     }
 
@@ -164,16 +273,14 @@
       font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal, monospace;
     }
 
-    /* Código inline (ex: mich@ dentro do texto) */
     code.highlighter-rouge {
       background: rgba(0, 0, 0, 0.9);
       border: 1px solid rgba(255, 255, 255, 0.15);
       padding: 1px 5px;
       border-radius: 2px;
-      color: #aa759f; /* Tom roxo/lilás característico do tema */
+      color: var(--cor-destaque);
     }
 
-    /* Botão discreto de copiar dentro da caixinha */
     .btn-copiar {
       background: #222;
       color: var(--cor-destaque);
@@ -205,7 +312,6 @@
       color: #666;
     }
 
-    /* Ajuste para celular */
     @media (max-width: 768px) {
       header h1 {
         margin-left: 0;
@@ -225,8 +331,30 @@
 
 <body>
 
+  <!-- BOTÃO HOME / RÉGUA (Canto Superior Esquerdo - Aponta para o Neon) -->
+  <div class="btn-home-container">
+    <button class="btn-home" onclick="mudarFundo('#0d0f12', 'radial-gradient(rgba(181, 232, 83, 0.1) 1px, transparent 1px), radial-gradient(rgba(104, 182, 255, 0.07) 1px, transparent 1px)', '25px 25px', '#b5e853', '#63c0f5')" title="Página Inicial (Tema Neon)">
+      📐
+    </button>
+  </div>
+
+  <!-- MENU FLUTUANTE DE TEMAS (Canto Superior Direito) -->
+  <div class="menu-temas-container">
+    <button class="btn-toggle-temas" onclick="toggleMenuTemas()" title="Configurações de Tema">
+      ⚙️
+    </button>
+    <div id="dropdownTemas" class="dropdown-temas">
+      <div class="dropdown-titulo">Cores</div>
+      <button onclick="mudarFundo('#0d0f12', 'radial-gradient(rgba(181, 232, 83, 0.1) 1px, transparent 1px), radial-gradient(rgba(104, 182, 255, 0.07) 1px, transparent 1px)', '25px 25px', '#b5e853', '#63c0f5')">Neon</button>
+      <button onclick="mudarFundo('#050508', 'linear-gradient(0deg, rgba(181, 232, 83, 0.04) 50%, transparent 50%), linear-gradient(90deg, rgba(181, 232, 83, 0.04) 50%, transparent 50%)', '40px 40px', '#b5e853', '#63c0f5')">Verde</button>
+      <button onclick="mudarFundo('#030712', 'linear-gradient(0deg, rgba(99, 192, 245, 0.05) 50%, transparent 50%), linear-gradient(90deg, rgba(99, 192, 245, 0.05) 50%, transparent 50%)', '30px 30px', '#63c0f5', '#b5e853')">Azul</button>
+      <button onclick="mudarFundo('#0a0a0f', 'repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.025) 0, rgba(255, 255, 255, 0.025) 1px, transparent 0, transparent 20px)', '30px 30px', '#ffffff', '#aaaaaa')">Grafite</button>
+      <button onclick="mudarFundo('#12081c', 'radial-gradient(circle at 50% 20%, rgba(168, 85, 247, 0.25) 0%, transparent 60%)', '100% 100%', '#c084fc', '#f472b6')">Roxo</button>
+    </div>
+  </div>
+
   <!-- ========================================================================
-       CABEÇALHO DO SITE (Título principal e descrição curta)
+       CABEÇALHO
        ======================================================================== -->
   <header>
     <a class="header" href="#">
@@ -243,58 +371,50 @@
   <div class="container">
     <section id="main_content">
 
-      <!-- SEÇÃO 1: TÍTULO E LISTA -->
       <h2>Titulo da Secao Aqui</h2>
       <p>Texto normal aqui. Voce pode escrever paragrafos explicando o seu projeto, servicos ou ideias:</p>
 
       <ul>
-        <li>Item da lista 1 com marcador verde</li>
-        <li>Item da lista 2 com <a href="#">Link Azul Brilhante</a></li>
+        <li>Item da lista 1 com marcador colorido</li>
+        <li>Item da lista 2 com <a href="#">Link em Destaque</a></li>
         <li>Item da lista 3</li>
       </ul>
 
-      <!-- SEÇÃO 2: SUBTÍTULOS E TEXTO -->
       <h3>Subtitulo Menor Aqui</h3>
       <h4>Cargo, data ou detalhe em cinza aqui</h4>
-      <p>Mais texto explicativo aqui. Se quiser destacar uma palavra como se fosse codigo no meio da frase, use assim: <code class="highlighter-rouge">exemplo@dominio.com</code>.</p>
-
-      <!-- SEÇÃO 3: CAIXINHA DE FINGERPRINT / CÓDIGO COM RELEVO -->
-      <p>Exemplo de caixinha escura com relevo para fingerprints, chaves ou comandos:</p>
+      <p>Mais texto explicativo aqui. Se quiser destacar uma palavra como se fosse codigo: <code class="highlighter-rouge">exemplo@dominio.com</code>.</p>
 
       <div class="highlight">
         <pre><code id="fp-1">6B52 7FE5 6308 5B7A 34B9  6C2F 8F90 3F3E 5662 199B</code></pre>
         <button class="btn-copiar" onclick="copiarTexto('fp-1', this)">Copiar</button>
       </div>
 
-      <!-- Segunda caixinha de exemplo (basta mudar o id="fp-2") -->
-      <div class="highlight">
-        <pre><code id="fp-2">contato[arroba]seudominio[ponto]com</code></pre>
-        <button class="btn-copiar" onclick="copiarTexto('fp-2', this)">Copiar</button>
-      </div>
-
     </section>
   </div>
 
-  <!-- ========================================================================
-       RODAPÉ DO SITE
-       ======================================================================== -->
   <footer>
     <div class="container">
-      &copy; <span id="ano-atual"></span> Seu Nome ou Projeto<br>
-      <a href="#">Link 1</a> |
-      <a href="#">Link 2</a> |
-      <a href="#">GitHub</a>
+      &copy; <span id="ano-atual"></span> Seu Nome ou Projeto
     </div>
   </footer>
 
   <!-- ========================================================================
-       JAVASCRIPT (Ano automático no rodapé + Botão de copiar das caixinhas)
+       JAVASCRIPT
        ======================================================================== -->
   <script>
-    // Coloca o ano atual automaticamente no rodapé
     document.getElementById("ano-atual").textContent = new Date().getFullYear();
 
-    // Função que copia o texto das caixinhas de fingerprint
+    // Define o Neon como padrão absoluto ao carregar a página
+    window.addEventListener('DOMContentLoaded', () => {
+      mudarFundo(
+        '#0d0f12', 
+        'radial-gradient(rgba(181, 232, 83, 0.1) 1px, transparent 1px), radial-gradient(rgba(104, 182, 255, 0.07) 1px, transparent 1px)', 
+        '25px 25px',
+        '#b5e853',
+        '#63c0f5'
+      );
+    });
+
     function copiarTexto(idElemento, botao) {
       const texto = document.getElementById(idElemento).innerText;
       navigator.clipboard.writeText(texto).then(() => {
@@ -305,102 +425,36 @@
         }, 1500);
       });
     }
+
+    function toggleMenuTemas() {
+      const dropdown = document.getElementById("dropdownTemas");
+      dropdown.classList.toggle("ativo");
+    }
+
+    window.onclick = function(event) {
+      if (!event.target.matches('.btn-toggle-temas') && !event.target.closest('.btn-toggle-temas')) {
+        const dropdown = document.getElementById("dropdownTemas");
+        if (dropdown.classList.contains('ativo')) {
+          dropdown.classList.remove('ativo');
+        }
+      }
+    }
+
+    function mudarFundo(corFundo, imagemArte, tamanhoArte, corDestaque, corLink) {
+      const root = document.documentElement;
+      root.style.setProperty('--cor-fundo', corFundo);
+      root.style.setProperty('--fundo-arte', imagemArte);
+      root.style.setProperty('--tamanho-arte', tamanhoArte);
+      root.style.setProperty('--cor-destaque', corDestaque);
+      root.style.setProperty('--cor-borda', corDestaque);
+      root.style.setProperty('--cor-link', corLink);
+      
+      const dropdown = document.getElementById("dropdownTemas");
+      if (dropdown) {
+        dropdown.classList.remove('ativo');
+      }
+    }
   </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#####old
-
-
-
-
-
-<!-- DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sobre</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 1rem;
-      max-width: 800px;
-      margin: 0 auto;
-      text-align: center;
-    }
-    nav {
-      margin-bottom: 1.5rem;
-    }
-    nav a {
-      margin: 0 10px;
-      color: #0b2545;
-      text-decoration: none;
-      font-weight: bold;
-    }
-    nav a:hover {
-      text-decoration: underline;
-    }
-    a {
-      color: inherit;
-    }
-    h2 {
-      margin-top: 1rem;
-    }
-    p {
-      margin: 0.5rem 0;
-    }
-  </style>
-</head>
-<body>
-
-  
-  <nav>
-    <a href="https://gabrielpereira.net.eu.org/">Home</a>
-    <!--
-    <a href="https://gabrielpereira.net.eu.org/noticia">Notícias</a>
-    <a href="https://gabrielpereira.net.eu.org/radioglobal">Rádio Global</a>
-
-  </nav>
-
-  <!-- Conteúdo Principal -->
-  <!--  <main>
-  
-  
-  
-  <center> #laboratorio fantasma </center>
-   <img src="perereca-de-alcatrazes.avif" width="75" height="75" alt="Perereca-de-alcatrazes"><br>
-	
-   
-    <p>
-      Perereca-de-alcatrazes (<em>Ololygon alcatraz</em> ou <em>Scinax alcatraz</em>) é uma espécie de anfíbio da família Hylidae.<br>
-      Endêmica do Brasil, onde pode ser encontrada apenas na ilha de Alcatrazes, no estado de São Paulo.<br>
-      Quando não está fazendo nada ela gosta de saltar pelas folhas, gosta da natureza, faz parte dela.<br>
-      Ela também gosta de aprender coisas novas, inclusive sobre computadores, mas não gosta de desenvolvimento e me falou que é muito interessante não se apegar a algumas <a href="https://gabrielpereira.net.eu.org/sobre/tecnologias.html">tecnologias</a>.<br>
-      A Perereca-de-alcatrazes, por ser frágil, é muito esquiva, porém dócil.
-    </p>
-
-    <br><br>
-
-    <h2>Conteúdo Principal</h2>
-    <p>Coloque aqui seus textos, imagens, tabelas, etc.</p>
-  </main>
-
-</body>
-</html>-->
