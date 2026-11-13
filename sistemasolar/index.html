@@ -2,7 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Força a largura de tela para 1280px, fazendo o site carregar o layout de computador no celular -->
+<meta name="viewport" content="width=1280">
 <title>Solar System Scope</title>
 
 <style>
@@ -28,7 +29,7 @@ iframe {
   border: none;
 }
 
-/* Botões de Navegação (Posicionados à esquerda e responsivos para celular) */
+/* Botões de Navegação (Posicionados à esquerda e responsivos) */
 .continent-selector {
   position: fixed;
   top: 12px;
@@ -36,34 +37,23 @@ iframe {
   z-index: 9999;
   display: flex;
   gap: 8px;
-  max-width: calc(100vw - 24px);
-  flex-wrap: wrap; /* Permite quebrar linha caso a tela seja muito pequena */
 }
 
 .continent-btn {
   display: inline-block;
-  padding: 8px 12px; /* Ligeiramente menor para adaptar melhor ao mobile */
-  background: #111ccb; /* Mantém o estilo semi-transparente escuro */
+  padding: 8px 12px;
   background-color: rgba(17, 17, 17, 0.85);
   color: white;
   border: 1px solid #777;
   border-radius: 6px;
   text-decoration: none;
   font-family: sans-serif;
-  font-size: 13px; /* Fonte ajustada para celular */
-  white-space: nowrap; /* Evita que o texto quebre no meio de uma palavra */
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .continent-btn:hover {
   background: rgba(34, 34, 34, 0.9);
-}
-
-/* Ajuste extra para telas muito pequenas (smartphones na vertical) */
-@media (max-width: 480px) {
-  .continent-btn {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
 }
 </style>
 </head>
