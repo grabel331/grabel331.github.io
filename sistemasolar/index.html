@@ -20,27 +20,15 @@ html, body {
   font-family: Arial, sans-serif;
 }
 
-/* Container que força a escala de computador em telas menores */
-.desktop-wrapper {
+iframe {
   position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
-  overflow: auto; /* Permite navegar caso o site fique maior que a tela do celular */
-  background: #000;
-}
-
-/* Força o iframe a ter o tamanho padrão de um monitor de PC (1280x720 ou maior) */
-iframe {
-  width: 1280px;
-  height: 720px;
-  min-width: 100%;
-  min-height: 100%;
   border: none;
-  transform-origin: top left;
 }
 
-/* Botões de Navegação (Posicionados à esquerda e flutuantes) */
+/* Botões de Navegação (Posicionados à esquerda e responsivos para celular) */
 .continent-selector {
   position: fixed;
   top: 12px;
@@ -48,6 +36,8 @@ iframe {
   z-index: 9999;
   display: flex;
   gap: 8px;
+  max-width: calc(100vw - 24px);
+  flex-wrap: wrap;
 }
 
 .continent-btn {
@@ -66,6 +56,14 @@ iframe {
 .continent-btn:hover {
   background: rgba(34, 34, 34, 0.9);
 }
+
+/* Ajuste extra para telas muito pequenas */
+@media (max-width: 480px) {
+  .continent-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
 </style>
 </head>
 
@@ -77,16 +75,14 @@ iframe {
   <a href="https://www.gabrielpereira.net.eu.org" class="continent-btn">🏠 Página inicial</a>
 </div>
 
-<!-- Wrapper para forçar o layout de desktop sem exigir que o usuário mude nada -->
-<div class="desktop-wrapper">
-  <iframe
-    id="solarsystem"
-    src="https://www.solarsystemscope.com/iframe"
-    title="Solar System Scope - Modelo Interativo"
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-    allowfullscreen>
-  </iframe>
-</div>
+<!-- Iframe do Solar System Scope com suporte a hardware gráfico -->
+<iframe
+  id="solarsystem"
+  src="https://www.solarsystemscope.com/iframe"
+  title="Solar System Scope - Modelo Interativo"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  allowfullscreen>
+</iframe>
 
 </body>
 </html>
