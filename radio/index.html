@@ -275,11 +275,12 @@
             audio.src = streamUrl;
             audio.play().catch(err => console.log("Erro ao reproduzir:", err));
 
+            // Atualiza a notificação do Android com a estação atual e o seu site
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.metadata = new MediaMetadata({
-                    title: station.name,
-                    artist: station.state ? `${station.state} - ${station.country || 'Brasil'}` : (station.country || 'Rádio Global'),
-                    album: 'Rádio'
+                    title: station.name,                  // Nome da rádio atual na notificação do Android
+                    artist: 'gabrielpereira.net.eu.org',   // Seu site limpo na linha inferior da notificação
+                    album: 'Rádio Global'
                 });
             }
 
@@ -354,8 +355,8 @@
                             if ('mediaSession' in navigator) {
                                 navigator.mediaSession.metadata = new MediaMetadata({
                                     title: alphaStation.name,
-                                    artist: 'Alpha MPB',
-                                    album: 'Rádio'
+                                    artist: 'gabrielpereira.net.eu.org',
+                                    album: 'Rádio Global'
                                 });
                             }
 
