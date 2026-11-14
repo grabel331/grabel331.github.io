@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Endereço no Mapa</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; background: #111; }
+        
+        #map { width: 100vw; height: 100vh; }
+
+        /* Contêiner Superior Esquerdo (Abaixo do Zoom do Leaflet) */
+        .top-left-controls {
+            position: fixed;
+            top: 90px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .ui-btn {
+            background: rgba(15, 23, 42, 0.9);
+            color: #f1f5f9;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            font-weight: 600;
+            font-size: 12px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            backdrop-filter: blur(6px);
+            transition: all 0.2s ease;
+            text-decoration: none;
+            text-align: left;
+            display: inline-block;
+        }
+
+        .ui-btn:hover {
+            background: #10b981;
+            color: #fff;
+            border-color: #10b981;
+        }
+
+        /* Caixa de Pesquisa Fixa no Topo */
+        #search-bar {
+            position: fixed; 
+            top: 20px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95); 
+            color: #fff; 
+            padding: 12px 16px;
+            border-radius: 16px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px;
+            z-index: 1000; 
+            border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7); 
+            backdrop-filter: blur(8px);
+            width: 90vw;
+            max-width: 420px;
+        }
+
+        #address-info { 
+            font-size: 12px; 
+            font-weight: 600; 
+            width: 100%; 
+            text-align: left; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            color: #10b981; 
+        }
+
+        .search-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            position: relative;
+        }
+        
+        input#cep-input {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            outline: none;
+            flex: 1;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        input#cep-input:focus {
+            border-color: #10b981;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .search-btn {
+            background: #10b981;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .search-btn:hover {
+            background: #059669;
+        }
+
+        /* Lista de Sugestões Estilo Autocompletar */
+        #suggestions-list {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 1001;
+            display: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+        }
+
+        .suggestion-item {
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #cbd5e1;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .suggestion-item:hover {
+            background: rgba(16, 185, 129, 0.2);
+            color: #fff;
+        }
+
+        /* Responsividade Celular */
+        @media (max-width: 600px) {
+            .top-left-controls {
+                top: 80px;
+                left: 10px;
+            }
+            #search-bar {
+                width: 94vw;
+                top: 10px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <!-- Controles Superiores Esquerdos (Página Inicial) -->
+    <div class="top-left-controls">
+        <a href="https://www.gabrielpereira.net.eu.org" class="ui-btn">🏠 Página Inicial</a>
+    </div>
+
+    <!-- Caixa de Pesquisa Fixa no Topo com Sugestões -->
+    <div id="search-bar">
+        <span id="address-info">Digite: CEP, Rua ou USE o <a href="https://google.com" style="text-decoration: none;">   <span style="color: #4285F4;">G</span><span style="color: #EA4335;">o</span><span style="color: #FBBC05;">o</span><span style="color: #4285F4;">g</span><span style="color: #34A853;">l</span><span style="color: #EA4335;">e</span> -> 
+  </a> <span style="font-size: 13px; color: #aaa;"> para melhor precisão</span>
+       <span style="font-size: 13px; color: #aaa;">
+  <br>Tec. usadas <br> Mapas <a href="https://leafletjs.com/" target="_blank" style="color: #0078A8; text-decoration: underline;">Leaflet</a> & 
+  <a href="https://www.openstreetmap.org/" target="_blank" style="color: #709E38; text-decoration: underline;">OpenStreetMap</a> <br>  
+  Mecanismo de busca de endereços <a href="https://nominatim.org/" target="_blank" style="color: #ffffff; text-decoration: underline;">Nominatim</a>
+  <br> Mecanismo de busca CEP (Brasil) <a href="https://viacep.com.br/" target="_blank" style="color: #ffffff; text-decoration: underline;">ViaCEP</a>
+</span>    
+</span>
+        
+        <div class="search-controls">
+            <input type="text" id="cep-input" placeholder="CEP ou Endereço" autocomplete="off">
+            <button class="search-btn" onclick="executarBusca()">Buscar</button>
+            <div id="suggestions-list"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        const map = L.map('map', { 
+            center: [-14.2350, -51.9253], 
+            zoom: 4, 
+            minZoom: 3,
+            maxBounds: [[-90, -180], [90, 180]],
+            maxBoundsViscosity: 1.0
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            noWrap: true,
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        let marcadorAtual = null;
+        let timeoutSugestoes = null;
+
+        const pinIcon = L.divIcon({
+            className: 'custom-pin-icon',
+            html: `<div style="width:16px; height:16px; background:#10b981; border:3px solid #fff; border-radius:50%; box-shadow:0 0 12px #10b981;"></div>`,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+        });
+
+        const inputCep = document.getElementById('cep-input');
+        const suggestionsBox = document.getElementById('suggestions-list');
+
+        function normalizarTexto(texto) {
+            return texto
+                .toString()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase()
+                .trim();
+        }
+
+        inputCep.addEventListener('input', function (e) {
+            let valor = e.target.value;
+            let apenasNums = valor.replace(/\D/g, "");
+
+            if (apenasNums.length <= 8 && !isNaN(valor.replace('-', ''))) {
+                if (apenasNums.length > 5) {
+                    inputCep.value = apenasNums.substring(0, 5) + '-' + apenasNums.substring(5, 8);
+                } else {
+                    inputCep.value = apenasNums;
+                }
+            }
+
+            clearTimeout(timeoutSugestoes);
+            if (valor.trim().length >= 3) {
+                timeoutSugestoes = setTimeout(() => buscarSugestoes(valor.trim()), 300);
+            } else {
+                fecharSugestoes();
+            }
+        });
+
+        inputCep.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                fecharSugestoes();
+                executarBusca();
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!document.getElementById('search-bar').contains(e.target)) {
+                fecharSugestoes();
+            }
+        });
+
+        function fecharSugestoes() {
+            suggestionsBox.style.display = 'none';
+            suggestionsBox.innerHTML = '';
+        }
+
+        async function buscarSugestoes(query) {
+            try {
+                let searchTerm = query;
+                let apenasNums = query.replace(/\D/g, "");
+                
+                if (apenasNums.length >= 5) {
+                    const resCep = await fetch(`https://viacep.com.br/ws/${apenasNums}/json/`);
+                    const dataCep = await resCep.json();
+                    if (!dataCep.erro) {
+                        searchTerm = `${dataCep.logradouro ? dataCep.logradouro + ', ' : ''}${dataCep.bairro}, ${dataCep.localidade} - ${dataCep.uf}`;
+                    }
+                }
+
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&countrycodes=br&limit=10`);
+                const data = await res.json();
+
+                if (data && data.length > 0) {
+                    const termoNormalizado = normalizarTexto(query);
+                    const dadosFiltrados = data.filter(item => 
+                        normalizarTexto(item.display_name).includes(termoNormalizado)
+                    );
+
+                    const resultadosParaExibir = dadosFiltrados.length > 0 ? dadosFiltrados : data;
+
+                    suggestionsBox.innerHTML = '';
+                    resultadosParaExibir.slice(0, 5).forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'suggestion-item';
+                        div.innerText = item.display_name;
+                        div.onclick = () => {
+                            inputCep.value = item.display_name.split(',')[0];
+                            fecharSugestoes();
+                            processarResultadoLocal(item);
+                        };
+                        suggestionsBox.appendChild(div);
+                    });
+                    suggestionsBox.style.display = 'block';
+                } else {
+                    fecharSugestoes();
+                }
+            } catch (err) {
+                console.error("Erro nas sugestões:", err);
+            }
+        }
+
+        async function executarBusca() {
+            let termo = inputCep.value.trim();
+            const infoText = document.getElementById('address-info');
+            if (!termo) return;
+
+            infoText.innerText = "🔍 Buscando...";
+            fecharSugestoes();
+
+            let apenasNums = termo.replace(/\D/g, "");
+            let queryBusca = termo;
+
+            if (apenasNums.length === 8) {
+                try {
+                    const resCep = await fetch(`https://viacep.com.br/ws/${apenasNums}/json/`);
+                    const dataCep = await resCep.json();
+                    
+                    if (!dataCep.erro) {
+                        queryBusca = `${dataCep.logradouro}, ${dataCep.bairro}, ${dataCep.localidade} - ${dataCep.uf}, Brasil`;
+                    }
+                } catch (e) {
+                    console.warn("Erro ao consultar ViaCEP, buscando direto...");
+                }
+            } else {
+                queryBusca = normalizarTexto(termo).includes('brasil') ? termo : `${termo}, Brasil`;
+            }
+
+            try {
+                let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryBusca)}&countrycodes=br&limit=1`);
+                let data = await res.json();
+
+                if ((!data || data.length === 0) && apenasNums.length === 8) {
+                    const resCepFallback = await fetch(`https://viacep.com.br/ws/${apenasNums}/json/`);
+                    const dataCepFallback = await resCepFallback.json();
+                    if (!dataCepFallback.erro) {
+                        const queryBairro = `${dataCepFallback.bairro}, ${dataCepFallback.localidade} - ${dataCepFallback.uf}, Brasil`;
+                        res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryBairro)}&countrycodes=br&limit=1`);
+                        data = await res.json();
+                    }
+                }
+
+                if (data && data.length > 0) {
+                    processarResultadoLocal(data[0]);
+                } else {
+                    infoText.innerText = "⚠️ Endereço ou CEP não encontrado.";
+                }
+            } catch (err) {
+                console.error("Erro na busca:", err);
+                infoText.innerText = "Erro ao conectar com o serviço.";
+            }
+        }
+
+        // Função inteligente para ajustar o zoom dependendo se é cidade, estado ou rua
+        function processarResultadoLocal(item) {
+            const lat = parseFloat(item.lat);
+            const lon = parseFloat(item.lon);
+            const nomeCompleto = item.display_name;
+            const tipo = item.type;       // Ex: 'administrative', 'city', 'residential', 'road', etc.
+            const categoria = item.class; // Ex: 'boundary', 'place', 'highway'
+
+            const infoText = document.getElementById('address-info');
+            infoText.innerText = nomeCompleto;
+
+            if (marcadorAtual) {
+                map.removeLayer(marcadorAtual);
+            }
+
+            // Se o Nominatim fornecer a caixa delimitadora (boundingbox), podemos usá-la se for uma região ampla
+            if (item.boundingbox && (categoria === 'boundary' || tipo === 'administrative' || tipo === 'city' || tipo === 'municipality' || tipo === 'state')) {
+                const bb = item.boundingbox; // [latMin, latMax, lonMin, lonMax]
+                const southWest = L.latLng(parseFloat(bb[0]), parseFloat(bb[2]));
+                const northEast = L.latLng(parseFloat(bb[1]), parseFloat(bb[3]));
+                const bounds = L.latLngBounds(southWest, northEast);
+
+                // Ajusta o mapa para enquadrar perfeitamente os limites da cidade/região
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13, duration: 1.5 });
+
+                marcadorAtual = L.marker([lat, lon], { icon: pinIcon }).addTo(map);
+                marcadorAtual.bindPopup(`<b>Região Encontrada</b><br>${nomeCompleto}`);
+            } else {
+                // Para ruas, bairros específicos ou CEPs, usa o zoom detalhado de nível 16
+                marcadorAtual = L.marker([lat, lon], { icon: pinIcon }).addTo(map);
+                marcadorAtual.bindPopup(`<b>Local Encontrado</b><br>${nomeCompleto}`).openPopup();
+                
+                map.flyTo([lat, lon], 16, { duration: 1.5 });
+            }
+        }
+    </script>
+</body>
+</html>
