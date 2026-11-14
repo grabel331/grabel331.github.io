@@ -1,0 +1,99 @@
+<!-- https://playerservices.streamtheworld.com/api/livestream-redirect/ALPHAMPBAAC.aac e um excelente -->
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NOAA Earth in Real-Time</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+iframe {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Estilo do botão de Tela cheia (à direita) */
+button {
+  position: fixed;
+  z-index: 9999;
+  top: 12px;
+  right: 12px;
+  padding: 10px 15px;
+  background: #111c;
+  color: white;
+  border: 1px solid #777;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Botão de Página Inicial (Posicionado à esquerda do botão de tela cheia) */
+.continent-selector {
+  position: fixed;
+  top: 12px;
+  right: 135px; /* Distância calculada para ficar ao lado do botão de tela cheia */
+  z-index: 9999;
+}
+
+.continent-btn {
+  display: inline-block;
+  padding: 10px 15px;
+  background: #111c;
+  color: white;
+  border: 1px solid #777;
+  border-radius: 6px;
+  text-decoration: none;
+  font-family: sans-serif;
+  font-size: 14px;
+}
+
+.continent-btn:hover {
+  background: #222c;
+}
+</style>
+</head>
+
+<body>
+
+<div class="continent-selector">
+  <a href="https://www.gabrielpereira.net.eu.org" class="continent-btn">🏠 Página inicial</a>
+</div>
+
+<iframe
+  id="noaa"
+  src="https://experience.arcgis.com/experience/8722bebcba3e42abbcc3aed13f935ab1?header=false&cover=false&frameborder=1"
+  allowfullscreen>
+</iframe>
+
+<button onclick="
+if (!document.fullscreenElement) {
+  document.documentElement.requestFullscreen();
+} else {
+  document.exitFullscreen();
+}">
+⛶ Tela cheia
+</button>
+
+</body>
+</html>
