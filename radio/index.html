@@ -278,8 +278,8 @@
             // Atualiza a notificação do Android com a estação atual e o seu site
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.metadata = new MediaMetadata({
-                    title: station.name,                  // Nome da rádio atual na notificação do Android
-                    artist: 'gabrielpereira.net.eu.org',   // Seu site limpo na linha inferior da notificação
+                    title: station.name,                  
+                    artist: 'gabrielpereira.net.eu.org',   
                     album: 'Rádio Global'
                 });
             }
@@ -287,7 +287,8 @@
             const lat = parseFloat(station.geo_lat);
             const lng = parseFloat(station.geo_long);
             if (!isNaN(lat) && !isNaN(lng)) {
-                map.flyTo([lat, lng], 11, { duration: 1.0 });
+                // CORRIGIDO: Agora usa o zoom 14 para aproximar o mapa ao clicar no marcador
+                map.flyTo([lat, lng], 14, { duration: 1.0 });
             }
         }
 
