@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab</title>
+
+  <style>
+    /* ==========================================================================
+       1. CORES E FUNDO GERAL (Onde mudar as cores principais do site)
+       ========================================================================== */
+    :root {
+      /* Padrão inicial alterado para NEON */
+      --cor-fundo: #0d0f12;          
+      --cor-texto: #eaeaea;          
+      --cor-destaque: #b5e853;       
+      --cor-link: #63c0f5;           
+      --cor-borda: #b5e853;          
+      --cor-caixa-codigo: rgba(0, 0, 0, 0.9); 
+      --borda-caixa-codigo: rgba(255, 255, 255, 0.15);
+      
+      /* Padrão inicial (HOME): Pontilhado Neon */
+      --fundo-arte: radial-gradient(rgba(181, 232, 83, 0.1) 1px, transparent 1px), 
+                    radial-gradient(rgba(104, 182, 255, 0.07) 1px, transparent 1px);
+      --tamanho-arte: 25px 25px;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--cor-fundo);
+      background-image: var(--fundo-arte);
+      background-size: var(--tamanho-arte);
+      color: var(--cor-texto);
+      font-size: 16px;
+      line-height: 1.5;
+      font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal, monospace;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    /* ==========================================================================
+       BOTÃO HOME / RÉGUA (Canto Superior Esquerdo)
+       ========================================================================== */
+    .btn-home-container {
+      position: fixed;
+      top: 15px;
+      left: 20px;
+      z-index: 9999;
+    }
+
+    .btn-home {
+      background: rgba(20, 20, 25, 0.85);
+      color: var(--cor-destaque);
+      border: 1px solid rgba(181, 232, 83, 0.4);
+      width: 36px;
+      height: 36px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      transition: 0.2s;
+    }
+
+    .btn-home:hover {
+      background: var(--cor-destaque);
+      color: #050508;
+      border-color: var(--cor-destaque);
+    }
+
+    /* ==========================================================================
+       MENU SUSPENSO DISCRETO DE TEMAS (Canto Superior Direito)
+       ========================================================================== */
+    .menu-temas-container {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      z-index: 9999;
+      font-family: inherit;
+    }
+
+    .btn-toggle-temas {
+      background: rgba(20, 20, 25, 0.85);
+      color: var(--cor-destaque);
+      border: 1px solid rgba(181, 232, 83, 0.4);
+      width: 36px;
+      height: 36px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      transition: 0.2s;
+    }
+
+    .btn-toggle-temas:hover {
+      background: var(--cor-destaque);
+      color: #050508;
+      border-color: var(--cor-destaque);
+    }
+
+    .dropdown-temas {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 42px;
+      background: rgba(10, 10, 15, 0.95);
+      border: 1px solid rgba(181, 232, 83, 0.3);
+      border-radius: 4px;
+      width: 150px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+      backdrop-filter: blur(6px);
+      padding: 6px 0;
+    }
+
+    .dropdown-temas.ativo {
+      display: block;
+    }
+
+    .dropdown-titulo {
+      font-size: 11px;
+      color: #888;
+      padding: 6px 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 4px;
+      text-align: center;
+    }
+
+    .dropdown-temas button {
+      width: 100%;
+      background: transparent;
+      color: #ccc;
+      border: none;
+      padding: 8px 12px;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      transition: 0.2s;
+    }
+
+    .dropdown-temas button:hover {
+      background: rgba(181, 232, 83, 0.15);
+      color: var(--cor-destaque);
+    }
+
+    .container {
+      width: 90%;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* ==========================================================================
+       2. CABEÇALHO SUPERIOR
+       ========================================================================== */
+    header {
+      background: rgba(0, 0, 0, 0.1);
+      width: 100%;
+      border-bottom: 1px dashed var(--cor-borda);
+      padding: 20px 0;
+      margin: 30px 0 40px 0;
+    }
+
+    header a.header {
+      text-decoration: none;
+    }
+
+    header h1 {
+      font-size: 30px;
+      line-height: 1.5;
+      margin: 0 0 0 -40px;
+      font-weight: bold;
+      color: var(--cor-destaque);
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1),
+                   0 0 5px rgba(181, 232, 83, 0.1),
+                   0 0 10px rgba(181, 232, 83, 0.1);
+      letter-spacing: -1px;
+    }
+
+    header h1:before {
+      content: "./ ";
+      font-size: 24px;
+    }
+
+    header h2 {
+      font-size: 18px;
+      font-weight: 300;
+      color: #666;
+      margin: 5px 0 0 0;
+    }
+
+    /* ==========================================================================
+       3. TÍTULOS DAS SEÇÕES E TEXTOS
+       ========================================================================== */
+    #main_content {
+      width: 100%;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: normal;
+      color: var(--cor-destaque);
+      letter-spacing: -0.03em;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1),
+                   0 0 5px rgba(181, 232, 83, 0.1),
+                   0 0 10px rgba(181, 232, 83, 0.1);
+    }
+
+    #main_content h1 { font-size: 30px; }
+    #main_content h2 { font-size: 24px; margin-top: 35px; }
+    #main_content h3 { font-size: 18px; margin-top: 25px; }
+    #main_content h4 { font-size: 14px; color: #999; margin-top: -10px; }
+
+    p {
+      margin-bottom: 18px;
+    }
+
+    a {
+      color: var(--cor-link);
+      text-shadow: 0 0 5px rgba(104, 182, 255, 0.5);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    ul {
+      list-style: none;
+      padding-left: 20px;
+    }
+
+    ul li {
+      margin-bottom: 8px;
+      position: relative;
+    }
+
+    ul li:before {
+      content: ">>";
+      color: var(--cor-destaque);
+      position: absolute;
+      left: -22px;
+      font-size: 13px;
+    }
+
+    /* ==========================================================================
+       4. CAIXINHAS DE CÓDIGO / FINGERPRINT
+       ========================================================================== */
+    .highlight {
+      background: var(--cor-caixa-codigo);
+      border: 1px solid var(--borda-caixa-codigo);
+      padding: 12px 15px;
+      border-radius: 2px;
+      margin: 15px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+      overflow-x: auto;
+    }
+
+    pre {
+      margin: 0;
+      color: #f8f8f2;
+      font-size: 14px;
+      font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal, monospace;
+    }
+
+    code.highlighter-rouge {
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 1px 5px;
+      border-radius: 2px;
+      color: var(--cor-destaque);
+    }
+
+    .btn-copiar {
+      background: #222;
+      color: var(--cor-destaque);
+      border: 1px solid #444;
+      padding: 4px 10px;
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 2px;
+      margin-left: 15px;
+      flex-shrink: 0;
+      transition: 0.2s;
+    }
+
+    .btn-copiar:hover {
+      background: var(--cor-destaque);
+      color: #151515;
+      border-color: var(--cor-destaque);
+    }
+
+    /* ==========================================================================
+       5. RODAPÉ
+       ========================================================================== */
+    footer {
+      border-top: 1px dashed #333;
+      margin-top: 60px;
+      padding: 25px 0 40px 0;
+      font-size: 13px;
+      color: #666;
+    }
+
+    @media (max-width: 768px) {
+      header h1 {
+        margin-left: 0;
+        font-size: 24px;
+      }
+      .highlight {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .btn-copiar {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- BOTÃO HOME / RÉGUA (Canto Superior Esquerdo - Aponta para o Neon) -->
+ <div class="btn-home-container">
+  <a href="https://gabrielpereira.net.eu.org" class="btn-home" onclick="mudarFundo('#0d0f12', 'radial-gradient(rgba(181, 232, 83, 0.1) 1px, transparent 1px), radial-gradient(rgba(104, 182, 255, 0.07) 1px, transparent 1px)', '25px 25px', '#b5e853', '#63c0f5')" title="Página Inicial (Tema Neon)">
+    📐
+  </a>
+</div>
+
+  <!-- MENU FLUTUANTE DE TEMAS (Canto Superior Direito) -->
+  <div class="menu-temas-container">
+    <button class="btn-toggle-temas" onclick="toggleMenuTemas()" title="Configurações de Tema">
+      ⚙️
+    </button>
+    <div id="dropdownTemas" class="dropdown-temas">
+      <div class="dropdown-titulo">Cores</div>
+      <button onclick="mudarFundo('#0d0f12', 'radial-gradient(rgba(181, 232, 83, 0.1) 1px, transparent 1px), radial-gradient(rgba(104, 182, 255, 0.07) 1px, transparent 1px)', '25px 25px', '#b5e853', '#63c0f5')">Neon</button>
+      <button onclick="mudarFundo('#050508', 'linear-gradient(0deg, rgba(181, 232, 83, 0.04) 50%, transparent 50%), linear-gradient(90deg, rgba(181, 232, 83, 0.04) 50%, transparent 50%)', '40px 40px', '#b5e853', '#63c0f5')">Verde</button>
+      <button onclick="mudarFundo('#030712', 'linear-gradient(0deg, rgba(99, 192, 245, 0.05) 50%, transparent 50%), linear-gradient(90deg, rgba(99, 192, 245, 0.05) 50%, transparent 50%)', '30px 30px', '#63c0f5', '#b5e853')">Azul</button>
+      <button onclick="mudarFundo('#0a0a0f', 'repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.025) 0, rgba(255, 255, 255, 0.025) 1px, transparent 0, transparent 20px)', '30px 30px', '#ffffff', '#aaaaaa')">Grafite</button>
+      <button onclick="mudarFundo('#12081c', 'radial-gradient(circle at 50% 20%, rgba(168, 85, 247, 0.25) 0%, transparent 60%)', '100% 100%', '#c084fc', '#f472b6')">Roxo</button>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       CABEÇALHO
+       ======================================================================== -->
+  <header>
+    <a class="header" href="#">
+      <div class="container">
+        <h1>Lab</h1>
+        <h2>Subtitulo ou frase de descricao curta do seu site aqui.</h2>
+      </div>
+    </a>
+  </header>
+
+  <!-- ========================================================================
+       CONTEÚDO PRINCIPAL
+       ======================================================================== -->
+  <div class="container">
+    <section id="main_content">
+
+      <h2>Titulo da Secao Aqui</h2>
+      <p>Texto normal aqui. Voce pode escrever paragrafos explicando o seu projeto, servicos ou ideias:</p>
+
+      <ul>
+        <li>Item da lista 1 com marcador colorido</li>
+        <li>Item da lista 2 com <a href="https://gabrielpereira.net.eu.org/sobre/seguranca/l/pagina.html">Link em Destaque</a></li>
+        <li>Item da lista 3</li>
+      </ul>
+
+      <h3>Subtitulo Menor Aqui</h3>
+      <h4>Cargo, data ou detalhe em cinza aqui</h4>
+      <p>Mais texto explicativo aqui. Se quiser destacar uma palavra como se fosse codigo: <code class="highlighter-rouge">exemplo@dominio.com</code>.</p>
+
+      <div class="highlight">
+        <pre><code id="fp-1">6B52 7FE5 6308 5B7A 34B9  6C2F 8F90 3F3E 5662 199B</code></pre>
+        <button class="btn-copiar" onclick="copiarTexto('fp-1', this)">Copiar</button>
+      </div>
+
+    </section>
+  </div>
+
+  <footer>
+    <div class="container">
+      &copy; <span id="ano-atual"></span> By gabrielpereira.net.eu.org
+    </div>
+  </footer>
+
+  <!-- ========================================================================
+       JAVASCRIPT
+       ======================================================================== -->
+  <script>
+    document.getElementById("ano-atual").textContent = new Date().getFullYear();
+
+    // Define o Neon como padrão absoluto ao carregar a página
+    window.addEventListener('DOMContentLoaded', () => {
+      mudarFundo(
+        '#0d0f12', 
+        'radial-gradient(rgba(181, 232, 83, 0.1) 1px, transparent 1px), radial-gradient(rgba(104, 182, 255, 0.07) 1px, transparent 1px)', 
+        '25px 25px',
+        '#b5e853',
+        '#63c0f5'
+      );
+    });
+
+    function copiarTexto(idElemento, botao) {
+      const texto = document.getElementById(idElemento).innerText;
+      navigator.clipboard.writeText(texto).then(() => {
+        const original = botao.innerText;
+        botao.innerText = "Copiado!";
+        setTimeout(() => {
+          botao.innerText = original;
+        }, 1500);
+      });
+    }
+
+    function toggleMenuTemas() {
+      const dropdown = document.getElementById("dropdownTemas");
+      dropdown.classList.toggle("ativo");
+    }
+
+    window.onclick = function(event) {
+      if (!event.target.matches('.btn-toggle-temas') && !event.target.closest('.btn-toggle-temas')) {
+        const dropdown = document.getElementById("dropdownTemas");
+        if (dropdown.classList.contains('ativo')) {
+          dropdown.classList.remove('ativo');
+        }
+      }
+    }
+
+    function mudarFundo(corFundo, imagemArte, tamanhoArte, corDestaque, corLink) {
+      const root = document.documentElement;
+      root.style.setProperty('--cor-fundo', corFundo);
+      root.style.setProperty('--fundo-arte', imagemArte);
+      root.style.setProperty('--tamanho-arte', tamanhoArte);
+      root.style.setProperty('--cor-destaque', corDestaque);
+      root.style.setProperty('--cor-borda', corDestaque);
+      root.style.setProperty('--cor-link', corLink);
+      
+      const dropdown = document.getElementById("dropdownTemas");
+      if (dropdown) {
+        dropdown.classList.remove('ativo');
+      }
+    }
+  </script>
+
+</body>
+</html>
