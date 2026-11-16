@@ -1,28 +1,706 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>World Radio</title>
-    <meta name="description" content="Mapa interativo global de estações de rádio ao vivo com navegação por continentes, modo aleatório e lista de favoritos persistente." />
     <meta name="theme-color" content="#0b1120" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="World Radio" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <meta property="og:title" content="World Radio" />
-    <meta property="og:description" content="Mapa interativo global de estações de rádio ao vivo com navegação por continentes, modo aleatório e lista de favoritos persistente." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  </head>
-  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-200 overflow-hidden">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #0b1120; color: #f1f5f9;
+        }
+        #map { width: 100vw; height: 100vh; background: #0b1120; }
 
+        .leaflet-control-zoom {
+            border: 1px solid rgba(255,255,255,0.12) !important;
+            border-radius: 10px !important;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.45) !important;
+        }
+        .leaflet-control-zoom a {
+            background: rgba(15,23,42,0.92) !important;
+            color: #e2e8f0 !important;
+            border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+        }
+        .leaflet-control-zoom a:hover { background: #10b981 !important; color: #fff !important; }
+        .leaflet-control-attribution {
+            background: rgba(15,23,42,0.78) !important;
+            color: #94a3b8 !important; font-size: 10px !important;
+        }
+        .leaflet-control-attribution a { color: #cbd5e1 !important; }
+
+        .radio-dot {
+            width: 12px; height: 12px; background: #10b981;
+            border: 2px solid #fff; border-radius: 50%;
+            box-shadow: 0 0 8px rgba(16,185,129,0.85);
+        }
+        .radio-dot.is-favorite {
+            background: #f59e0b;
+            box-shadow: 0 0 10px rgba(245,158,11,0.9);
+        }
+        .radio-dot.is-playing {
+            width: 16px; height: 16px; background: #34d399;
+            box-shadow: 0 0 14px rgba(52,211,153,1);
+        }
+
+        .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+            background-color: rgba(16,185,129,0.25) !important;
+        }
+        .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
+            background-color: rgba(5,150,105,0.9) !important;
+            color: #fff !important; font-weight: 600 !important; font-size: 11px !important;
+        }
+
+        .world-radio-tooltip.leaflet-tooltip {
+            background: rgba(15,23,42,0.95); color: #f8fafc;
+            border: 1px solid rgba(255,255,255,0.14); border-radius: 8px;
+            padding: 6px 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.55);
+        }
+        .world-radio-tooltip.leaflet-tooltip-top::before { border-top-color: rgba(15,23,42,0.95); }
+
+        .now-playing-pin-wrapper {
+            position: relative; width: 34px; height: 34px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .now-playing-pin-ring {
+            position: absolute; inset: 0; border-radius: 50%;
+            background: rgba(16,185,129,0.35);
+            border: 1.5px solid rgba(52,211,153,0.8);
+            animation: beacon 1.8s cubic-bezier(0.16,1,0.3,1) infinite;
+        }
+        .now-playing-pin-core {
+            position: relative; width: 22px; height: 22px; border-radius: 50%;
+            background: #10b981; border: 2px solid #fff; color: #022c22;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 14px rgba(16,185,129,0.85);
+        }
+        @keyframes beacon {
+            0% { transform: scale(0.75); opacity: 0.9; }
+            70%, 100% { transform: scale(1.35); opacity: 0; }
+        }
+        .now-playing-tooltip.leaflet-tooltip {
+            background: rgba(15,23,42,0.96); color: #f8fafc;
+            border: 1px solid rgba(16,185,129,0.65); border-radius: 12px;
+            padding: 7px 11px; min-width: 140px; max-width: 230px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.65); pointer-events: none;
+        }
+        .now-playing-tooltip.leaflet-tooltip-top::before { border-top-color: rgba(16,185,129,0.65); }
+
+        #loading-indicator {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            background: rgba(5,150,105,0.95); color: #fff; padding: 8px 16px;
+            border-radius: 999px; font-size: 12px; font-weight: 600; z-index: 1500;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+        }
+        #loading-indicator.hidden { display: none; }
+
+        .top-actions {
+            position: fixed; top: 12px; right: 12px; z-index: 900;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .top-btn {
+            background: rgba(15,23,42,0.92); color: #f1f5f9;
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 12px;
+            padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.45); backdrop-filter: blur(8px);
+        }
+        .top-btn:hover { border-color: rgba(16,185,129,0.6); color: #fff; }
+        .top-btn.fav-has { border-color: rgba(245,158,11,0.45); }
+
+        .continent-selector {
+            position: fixed; top: 104px; left: 12px; z-index: 900;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .mobile-reg-toggle {
+            display: none; background: rgba(15,23,42,0.92); color: #f1f5f9;
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+            padding: 7px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+        }
+        .continent-list { display: flex; flex-direction: column; gap: 6px; }
+        .continent-btn {
+            background: rgba(15,23,42,0.9); color: #f1f5f9;
+            border: 1px solid rgba(255,255,255,0.15); font-weight: 600; font-size: 12px;
+            padding: 6px 12px; border-radius: 6px; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.45); text-align: left; min-width: 148px;
+        }
+        .continent-btn:hover, .continent-btn.active { background: #059669; border-color: #10b981; color: #fff; }
+        .continent-btn.mundo { background: #047857; border-color: #059669; }
+
+        #player-bar {
+            position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+            width: calc(100vw - 24px); max-width: 440px; z-index: 1000;
+            background: rgba(15,23,42,0.95); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 18px; padding: 10px 14px;
+            box-shadow: 0 14px 34px rgba(0,0,0,0.7); backdrop-filter: blur(10px);
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .player-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .station-meta { min-width: 0; flex: 1; cursor: pointer; }
+        #station-info {
+            font-size: 13px; font-weight: 600; color: #34d399;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        #station-sub {
+            font-size: 11px; color: #94a3b8; margin-top: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .fav-toggle-btn {
+            height: 32px; padding: 0 10px; border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06);
+            color: #cbd5e1; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+        }
+        .fav-toggle-btn.saved {
+            background: rgba(245,158,11,0.2); color: #fcd34d; border-color: rgba(245,158,11,0.5);
+        }
+        .player-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .left-ctrl, .center-ctrl, .right-ctrl { display: flex; align-items: center; gap: 6px; }
+        .pill-btn {
+            height: 32px; padding: 0 10px; border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08);
+            color: #cbd5e1; font-size: 11px; font-weight: 600; cursor: pointer;
+        }
+        .pill-btn.random-ativo { background: #2563eb; color: #fff; border-color: #3b82f6; box-shadow: 0 0 10px rgba(59,130,246,0.55); }
+        .icon-btn {
+            width: 32px; height: 32px; border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08);
+            color: #e2e8f0; font-size: 13px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .icon-btn:hover { background: #059669; border-color: #10b981; color: #fff; }
+        .play-btn {
+            width: 36px; height: 36px; border-radius: 50%; border: none;
+            background: #10b981; color: #022c22; font-size: 14px; font-weight: 700; cursor: pointer;
+        }
+        .play-btn:hover { background: #34d399; }
+        input[type="range"] { width: 64px; accent-color: #10b981; cursor: pointer; }
+
+        .drawer {
+            position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 380px;
+            z-index: 1200; background: rgba(15,23,42,0.97);
+            border-left: 1px solid rgba(255,255,255,0.15);
+            display: none; flex-direction: column; backdrop-filter: blur(14px);
+        }
+        .drawer.open { display: flex; }
+        .drawer-head {
+            padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .drawer-tabs {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 12px 16px 8px;
+            padding: 4px; background: #020617; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .tab-btn {
+            padding: 7px; border: none; border-radius: 6px; background: transparent;
+            color: #94a3b8; font-size: 12px; font-weight: 600; cursor: pointer;
+        }
+        .tab-btn.active { background: #1e293b; color: #34d399; }
+        .drawer-search { padding: 0 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; gap: 8px; }
+        .drawer-search input {
+            width: 100%; padding: 8px 10px; border-radius: 8px;
+            background: #020617; border: 1px solid rgba(255,255,255,0.15);
+            color: #f1f5f9; font-size: 12px; outline: none;
+        }
+        .drawer-search input:focus { border-color: #10b981; }
+        .fav-filter-btn {
+            padding: 7px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(2,6,23,0.6); color: #cbd5e1; font-size: 12px; cursor: pointer;
+            display: flex; justify-content: space-between;
+        }
+        .fav-filter-btn.active { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
+        .drawer-list { flex: 1; overflow-y: auto; }
+        .station-row {
+            padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        }
+        .station-row:hover { background: rgba(255,255,255,0.04); }
+        .station-row-info { min-width: 0; flex: 1; cursor: pointer; }
+        .station-row-title { font-size: 12px; font-weight: 600; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .station-row-sub { font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+        .station-row-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .empty-state { padding: 40px 24px; text-align: center; color: #94a3b8; font-size: 12px; line-height: 1.5; }
+
+        @media (max-width: 640px) {
+            .mobile-reg-toggle { display: block; }
+            .continent-list { display: none; }
+            .continent-list.open { display: flex; }
+            input[type="range"] { display: none; }
+            .fav-label { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-indicator">Carregando estações...</div>
+    <div id="map"></div>
+
+    <div class="top-actions">
+        <button class="top-btn" id="open-favs-btn">★ Favoritos (<span id="fav-count">0</span>)</button>
+        <button class="top-btn" id="open-explore-btn">🔍 Buscar</button>
+    </div>
+
+    <div class="continent-selector">
+        <button class="mobile-reg-toggle" id="mobile-reg-btn">🌍 Regiões ▾</button>
+        <div class="continent-list" id="continent-list">
+            <button class="continent-btn mundo" onclick="irPara(20, 0, 2, this)">🌍 GLOBAL</button>
+            <button class="continent-btn active" onclick="irPara(-20.5, -48.5, 5, this)">🌎 América do Sul</button>
+            <button class="continent-btn" onclick="irPara(40.0, -100.0, 4, this)">🌎 América do Norte</button>
+            <button class="continent-btn" onclick="irPara(15.0, -88.0, 5, this)">🌎 América Central</button>
+            <button class="continent-btn" onclick="irPara(50.0, 10.0, 4, this)">🌍 Europa</button>
+            <button class="continent-btn" onclick="irPara(0.0, 20.0, 3, this)">🌍 África</button>
+            <button class="continent-btn" onclick="irPara(15.0, 125.0, 4, this)">🌏 Ásia e Oceania</button>
+        </div>
+    </div>
+
+    <div id="player-bar">
+        <audio id="audio-player" playsinline></audio>
+        <div class="player-top">
+            <div class="station-meta" onclick="focarEstacaoAtual()" title="Centralizar mapa nesta estação">
+                <div id="station-info">Carregando estações...</div>
+                <div id="station-sub">Conectando à rede global de rádios</div>
+            </div>
+            <button id="fav-current-btn" class="fav-toggle-btn" onclick="toggleFavoriteCurrent()" style="display:none">
+                ♥ <span class="fav-label">Favoritar</span>
+            </button>
+        </div>
+        <div class="player-controls">
+            <div class="left-ctrl">
+                <button id="random-toggle-btn" class="pill-btn" onclick="toggleRandomMode()" title="Alternar modo aleatório global (OFF prioriza SP)">🌍 OFF</button>
+                <button class="icon-btn" onclick="focarEstacaoAtual()" title="Focar na rádio atual" aria-label="Focar na rádio atual">◎</button>
+            </div>
+            <div class="center-ctrl">
+                <button class="icon-btn" onclick="mudarEstacao(-1)" title="Estação Anterior">◀</button>
+                <button class="play-btn" id="play-pause-btn" onclick="togglePlayPause()" title="Tocar / Pausar">▶</button>
+                <button class="icon-btn" onclick="mudarEstacao(1)" title="Próxima Estação">▶</button>
+            </div>
+            <div class="right-ctrl">
+                <button class="icon-btn" id="mute-btn" onclick="toggleMute()" title="Silenciar">🔊</button>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.85" oninput="setVolume(this.value)" />
+            </div>
+        </div>
+    </div>
+
+    <aside class="drawer" id="stations-drawer">
+        <div class="drawer-head">
+            <strong style="font-size:14px">Estações</strong>
+            <button class="icon-btn" onclick="closeDrawer()" aria-label="Fechar">✕</button>
+        </div>
+        <div class="drawer-tabs">
+            <button class="tab-btn active" id="tab-favs" onclick="switchTab('favorites')">Favoritos</button>
+            <button class="tab-btn" id="tab-explore" onclick="switchTab('explore')">Explorar</button>
+        </div>
+        <div class="drawer-search">
+            <input type="text" id="drawer-search-input" placeholder="Filtrar estações..." oninput="renderDrawerList()" />
+            <button class="fav-filter-btn" id="map-fav-filter-btn" onclick="toggleMapFavoritesFilter()">
+                <span>Mostrar só favoritos no mapa</span>
+                <span id="map-fav-filter-label">TODOS</span>
+            </button>
+            <div id="fav-local-actions" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <button class="fav-filter-btn" style="justify-content:center" onclick="exportFavoritesLocal()">⬇ Salvar local</button>
+                <button class="fav-filter-btn" style="justify-content:center" onclick="document.getElementById('fav-import-input').click()">⬆ Importar</button>
+                <input type="file" id="fav-import-input" accept=".json,application/json" style="display:none" onchange="importFavoritesLocal(event)" />
+            </div>
+        </div>
+        <div class="drawer-list" id="drawer-list"></div>
+    </aside>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script>
+        const FAVORITES_KEY = 'world_radio_favorites_v1';
+        const API_SERVERS = [
+            'https://de1.api.radio-browser.info',
+            'https://de2.api.radio-browser.info',
+            'https://all.api.radio-browser.info'
+        ];
+
+        const map = L.map('map', {
+            center: [-20.5, -48.5],
+            zoom: 5,
+            minZoom: 2,
+            closePopupOnClick: false,
+            maxBounds: [[-90, -180], [90, 180]],
+            maxBoundsViscosity: 1.0
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            noWrap: true,
+            bounds: [[-90, -180], [90, 180]],
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        const markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40 });
+        map.addLayer(markers);
+
+        let listaEstacoes = [];
+        let favorites = loadFavorites();
+        let estacaoAtual = null;
+        let indiceAtual = 0;
+        let isRandomMode = false;
+        let showOnlyFavoritesOnMap = false;
+        let activeTab = 'favorites';
+        let activeMarker = null;
+        const markerById = new Map();
+
+        const audio = document.getElementById('audio-player');
+        audio.volume = 0.85;
+
+        function loadFavorites() {
+            try {
+                const raw = localStorage.getItem(FAVORITES_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch { return []; }
+        }
+        function saveFavorites() {
+            try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)); } catch {}
+            document.getElementById('fav-count').textContent = favorites.length;
+            updateFavCurrentBtn();
+            rebuildMarkers();
+            renderDrawerList();
+        }
+        function isFavorite(id) {
+            return Boolean(id && favorites.some(f => f.stationuuid === id));
+        }
+        function hasValidCoords(s) {
+            if (s.geo_lat == null || s.geo_long == null) return false;
+            const lat = Number(s.geo_lat), lng = Number(s.geo_long);
+            if (Number.isNaN(lat) || Number.isNaN(lng) || (lat === 0 && lng === 0)) return false;
+            return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+        }
+        function escapeHtml(t) {
+            return String(t || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+        function getLocationLabel(s) {
+            return [s.state && s.state.trim(), s.country && s.country.trim()].filter(Boolean).join(' · ') || 'Localização global';
+        }
+        function tratarStreamUrl(station) {
+            const rawUrl = (station.url_resolved || station.url || '').trim();
+            if (!rawUrl) return '';
+            if (window.location.protocol === 'https:' && rawUrl.startsWith('http://')) {
+                return rawUrl.replace('http://', 'https://');
+            }
+            return rawUrl;
+        }
+        function createDotIcon(isFav, isPlaying) {
+            const cls = ['radio-dot'];
+            if (isFav) cls.push('is-favorite');
+            if (isPlaying) cls.push('is-playing');
+            const size = isPlaying ? 16 : 12;
+            return L.divIcon({ className: 'custom-radio-icon', html: `<div class="${cls.join(' ')}"></div>`, iconSize: [size, size], iconAnchor: [size/2, size/2] });
+        }
+        function createActiveBeaconIcon() {
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
+            return L.divIcon({
+                className: 'now-playing-pin',
+                html: `<div class="now-playing-pin-wrapper"><div class="now-playing-pin-ring"></div><div class="now-playing-pin-core">${svg}</div></div>`,
+                iconSize: [34, 34], iconAnchor: [17, 17]
+            });
+        }
+        function updateNowPlayingMarker(station) {
+            if (activeMarker) { activeMarker.remove(); activeMarker = null; }
+            if (!station || !hasValidCoords(station)) return;
+            const lat = Number(station.geo_lat), lng = Number(station.geo_long);
+            activeMarker = L.marker([lat, lng], { icon: createActiveBeaconIcon(), zIndexOffset: 2000 }).addTo(map);
+            const loc = getLocationLabel(station);
+            const html = `<div style="max-width:210px"><div style="font-size:10px;font-weight:600;color:#34d399">📡 Tocando agora</div><div style="font-size:12px;font-weight:700;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(station.name)}</div><div style="font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(loc)}</div></div>`;
+            activeMarker.bindTooltip(html, { permanent: true, direction: 'top', offset: [0, -18], opacity: 1, className: 'now-playing-tooltip' });
+        }
+        function focusStation(station, fromMapClick) {
+            if (!station || !hasValidCoords(station)) return;
+            const lat = Number(station.geo_lat), lng = Number(station.geo_long);
+            if (fromMapClick) {
+                map.panTo([lat, lng], { animate: true, duration: 0.45 });
+            } else {
+                const z = map.getZoom();
+                map.flyTo([lat, lng], z < 7 ? 8 : Math.min(z, 9), { duration: 1.0 });
+            }
+        }
+        function tocarEstacao(station, fromMapClick) {
+            const url = tratarStreamUrl(station);
+            if (!url) return;
+            estacaoAtual = station;
+            const idx = listaEstacoes.findIndex(s => s.stationuuid === station.stationuuid);
+            if (idx !== -1) indiceAtual = idx;
+
+            document.getElementById('station-info').textContent = station.name;
+            document.getElementById('station-sub').textContent = 'Conectando transmissão...';
+            document.getElementById('fav-current-btn').style.display = 'inline-flex';
+            updateFavCurrentBtn();
+            updateNowPlayingMarker(station);
+            focusStation(station, fromMapClick);
+
+            audio.src = url;
+            audio.play().catch(() => {
+                document.getElementById('station-sub').textContent = 'Toque em ▶ ou em uma rádio no mapa';
+                document.getElementById('play-pause-btn').textContent = '▶';
+            });
+
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: station.name,
+                    artist: 'World Radio',
+                    album: getLocationLabel(station)
+                });
+            }
+        }
+        audio.addEventListener('playing', () => {
+            document.getElementById('play-pause-btn').textContent = '❚❚';
+            if (estacaoAtual) document.getElementById('station-sub').textContent = getLocationLabel(estacaoAtual);
+        });
+        audio.addEventListener('pause', () => {
+            document.getElementById('play-pause-btn').textContent = '▶';
+        });
+        audio.addEventListener('error', () => {
+            document.getElementById('play-pause-btn').textContent = '▶';
+            document.getElementById('station-sub').textContent = 'Stream indisponível — tente outra estação';
+        });
+
+        function focarEstacaoAtual() {
+            if (estacaoAtual) focusStation(estacaoAtual, false);
+        }
+        function togglePlayPause() {
+            if (!audio.src && estacaoAtual) audio.src = tratarStreamUrl(estacaoAtual);
+            if (!audio.src) return;
+            if (audio.paused) audio.play().catch(() => {}); else audio.pause();
+        }
+        function toggleMute() {
+            audio.muted = !audio.muted;
+            document.getElementById('mute-btn').textContent = audio.muted ? '🔇' : '🔊';
+        }
+        function setVolume(v) {
+            audio.volume = Number(v);
+            if (audio.volume > 0 && audio.muted) toggleMute();
+        }
+        function toggleRandomMode() {
+            isRandomMode = !isRandomMode;
+            const btn = document.getElementById('random-toggle-btn');
+            btn.textContent = isRandomMode ? '🌍 ON' : '🌍 OFF';
+            btn.classList.toggle('random-ativo', isRandomMode);
+        }
+        function mudarEstacao(direcao) {
+            if (showOnlyFavoritesOnMap && favorites.length > 0) {
+                const cur = favorites.findIndex(f => f.stationuuid === (estacaoAtual && estacaoAtual.stationuuid));
+                const next = cur === -1 ? 0 : (cur + direcao + favorites.length) % favorites.length;
+                tocarEstacao(favorites[next], false);
+                return;
+            }
+            if (!listaEstacoes.length) return;
+            if (isRandomMode) {
+                let n = indiceAtual;
+                if (listaEstacoes.length > 1) { while (n === indiceAtual) n = Math.floor(Math.random() * listaEstacoes.length); }
+                indiceAtual = n;
+            } else {
+                const sp = listaEstacoes.filter(s => s.state && (s.state.toLowerCase().includes('são paulo') || s.state.toLowerCase().includes('sao paulo')));
+                if (sp.length) {
+                    const pick = sp[Math.floor(Math.random() * sp.length)];
+                    const found = listaEstacoes.findIndex(s => s.stationuuid === pick.stationuuid);
+                    if (found !== -1) indiceAtual = found;
+                } else {
+                    indiceAtual = (indiceAtual + direcao + listaEstacoes.length) % listaEstacoes.length;
+                }
+            }
+            tocarEstacao(listaEstacoes[indiceAtual], false);
+        }
+        function toggleFavorite(station) {
+            const exists = isFavorite(station.stationuuid);
+            favorites = exists
+                ? favorites.filter(f => f.stationuuid !== station.stationuuid)
+                : [station, ...favorites];
+            saveFavorites();
+        }
+        function toggleFavoriteCurrent() {
+            if (estacaoAtual) toggleFavorite(estacaoAtual);
+        }
+        function updateFavCurrentBtn() {
+            const btn = document.getElementById('fav-current-btn');
+            const saved = estacaoAtual && isFavorite(estacaoAtual.stationuuid);
+            btn.classList.toggle('saved', Boolean(saved));
+            btn.innerHTML = saved ? '♥ <span class="fav-label">Salva</span>' : '♡ <span class="fav-label">Favoritar</span>';
+        }
+        function irPara(lat, lng, zoom, el) {
+            document.querySelectorAll('.continent-btn').forEach(b => b.classList.remove('active'));
+            if (el) el.classList.add('active');
+            document.getElementById('continent-list').classList.remove('open');
+            map.flyTo([lat, lng], zoom, { duration: 1.5 });
+        }
+        function rebuildMarkers() {
+            markers.clearLayers();
+            markerById.clear();
+            const source = showOnlyFavoritesOnMap ? favorites : listaEstacoes;
+            const list = [];
+            for (const s of source) {
+                if (!hasValidCoords(s)) continue;
+                const m = L.marker([Number(s.geo_lat), Number(s.geo_long)], {
+                    icon: createDotIcon(isFavorite(s.stationuuid), estacaoAtual && estacaoAtual.stationuuid === s.stationuuid)
+                });
+                m.on('click', () => tocarEstacao(s, true));
+                m.bindTooltip(`<b>${escapeHtml(s.name)}</b><br>${escapeHtml(getLocationLabel(s))}`, { direction: 'top', className: 'world-radio-tooltip', opacity: 1 });
+                markerById.set(s.stationuuid, m);
+                list.push(m);
+            }
+            if (list.length) markers.addLayers(list);
+        }
+        function openDrawer(tab) {
+            activeTab = tab;
+            document.getElementById('stations-drawer').classList.add('open');
+            switchTab(tab);
+        }
+        function closeDrawer() {
+            document.getElementById('stations-drawer').classList.remove('open');
+        }
+        function switchTab(tab) {
+            activeTab = tab;
+            document.getElementById('tab-favs').classList.toggle('active', tab === 'favorites');
+            document.getElementById('tab-explore').classList.toggle('active', tab === 'explore');
+            document.getElementById('map-fav-filter-btn').style.display = tab === 'favorites' ? 'flex' : 'none';
+            document.getElementById('fav-local-actions').style.display = tab === 'favorites' ? 'grid' : 'none';
+            renderDrawerList();
+        }
+        function exportFavoritesLocal() {
+            if (!favorites.length) return;
+            const blob = new Blob([JSON.stringify(favorites, null, 2)], { type: 'application/json;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'world-radio-favoritos.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        function importFavoritesLocal(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const parsed = JSON.parse(String(reader.result || '[]'));
+                    if (Array.isArray(parsed)) {
+                        const merged = new Map(favorites.map(f => [f.stationuuid, f]));
+                        for (const item of parsed) {
+                            if (item && item.stationuuid && item.name && !merged.has(item.stationuuid)) merged.set(item.stationuuid, item);
+                        }
+                        favorites = Array.from(merged.values());
+                        saveFavorites();
+                    }
+                } catch {}
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+        function toggleMapFavoritesFilter() {
+            showOnlyFavoritesOnMap = !showOnlyFavoritesOnMap;
+            document.getElementById('map-fav-filter-btn').classList.toggle('active', showOnlyFavoritesOnMap);
+            document.getElementById('map-fav-filter-label').textContent = showOnlyFavoritesOnMap ? 'ATIVO' : 'TODOS';
+            rebuildMarkers();
+        }
+        function renderDrawerList() {
+            const container = document.getElementById('drawer-list');
+            const q = document.getElementById('drawer-search-input').value.trim().toLowerCase();
+            const source = activeTab === 'favorites' ? favorites : listaEstacoes;
+            const items = [];
+            for (const s of source) {
+                const hay = `${s.name} ${s.country || ''} ${s.state || ''} ${s.tags || ''}`.toLowerCase();
+                if (!q || hay.includes(q)) {
+                    items.push(s);
+                    if (items.length >= 80) break;
+                }
+            }
+            if (!items.length) {
+                container.innerHTML = `<div class="empty-state">${activeTab === 'favorites' ? 'Nenhuma rádio favorita salva ainda.' : 'Nenhuma estação encontrada.'}</div>`;
+                return;
+            }
+            container.innerHTML = '';
+            for (const s of items) {
+                const row = document.createElement('div');
+                row.className = 'station-row';
+                const info = document.createElement('div');
+                info.className = 'station-row-info';
+                info.innerHTML = `<div class="station-row-title">${escapeHtml(s.name)}</div><div class="station-row-sub">${escapeHtml(getLocationLabel(s))}</div>`;
+                info.onclick = () => tocarEstacao(s, false);
+                const actions = document.createElement('div');
+                actions.className = 'station-row-actions';
+                const favBtn = document.createElement('button');
+                favBtn.className = 'icon-btn';
+                favBtn.textContent = isFavorite(s.stationuuid) ? '★' : '☆';
+                favBtn.onclick = () => toggleFavorite(s);
+                const playBtn = document.createElement('button');
+                playBtn.className = 'icon-btn';
+                playBtn.textContent = '▶';
+                playBtn.onclick = () => tocarEstacao(s, false);
+                actions.append(favBtn, playBtn);
+                row.append(info, actions);
+                container.appendChild(row);
+            }
+        }
+
+        document.getElementById('open-favs-btn').onclick = () => openDrawer('favorites');
+        document.getElementById('open-explore-btn').onclick = () => openDrawer('explore');
+        document.getElementById('mobile-reg-btn').onclick = () => document.getElementById('continent-list').classList.toggle('open');
+        document.getElementById('fav-count').textContent = favorites.length;
+
+        document.addEventListener('click', function startOnce() {
+            if (audio.paused && estacaoAtual) {
+                if (!audio.src) audio.src = tratarStreamUrl(estacaoAtual);
+                audio.play().catch(() => {});
+            }
+            document.removeEventListener('click', startOnce);
+        }, { once: true });
+
+        async function loadRadios() {
+            for (const server of API_SERVERS) {
+                try {
+                    const [resAlpha, resBr] = await Promise.all([
+                        fetch(`${server}/json/stations/search?name=Alpha%20MPB&limit=5&hidebroken=true`).catch(() => null),
+                        fetch(`${server}/json/stations/search?countrycode=BR&has_geo_info=true&limit=3000&hidebroken=true`)
+                    ]);
+                    if (!resBr.ok) continue;
+                    const alphaList = resAlpha && resAlpha.ok ? await resAlpha.json() : [];
+                    const brList = await resBr.json();
+                    const mapStations = new Map();
+                    const alpha = alphaList.find(s => (s.url_resolved || s.url) && hasValidCoords(s));
+                    if (alpha) mapStations.set(alpha.stationuuid, alpha);
+                    for (const s of brList) {
+                        if (s.stationuuid && hasValidCoords(s) && !mapStations.has(s.stationuuid)) mapStations.set(s.stationuuid, s);
+                    }
+                    listaEstacoes = Array.from(mapStations.values());
+                    rebuildMarkers();
+                    document.getElementById('loading-indicator').classList.add('hidden');
+                    if (alpha || listaEstacoes[0]) tocarEstacao(alpha || listaEstacoes[0], false);
+
+                    // Carregar estações globais em segundo plano
+                    fetch(`${server}/json/stations/search?has_geo_info=true&limit=8000&hidebroken=true`)
+                        .then(r => r.ok ? r.json() : [])
+                        .then(gl => {
+                            let added = false;
+                            for (const s of gl) {
+                                if (s.stationuuid && hasValidCoords(s) && !mapStations.has(s.stationuuid)) {
+                                    mapStations.set(s.stationuuid, s);
+                                    added = true;
+                                }
+                            }
+                            if (added) {
+                                listaEstacoes = Array.from(mapStations.values());
+                                rebuildMarkers();
+                                renderDrawerList();
+                            }
+                        }).catch(() => {});
+                    break;
+                } catch {}
+            }
+        }
+        loadRadios();
+    </script>
+</body>
+</html>
