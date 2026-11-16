@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rádio</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; background: #111; }
+        
+        #map { width: 100vw; height: 100vh; }
+
+        /* Indicador de Carregamento */
+        #loading-indicator {
+            position: fixed; top: 60%; left: 50%; transform: translateX(-50%);
+            background: rgba(16, 185, 129, 0.9); color: #fff; padding: 6px 16px;
+            border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 2000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(6px);
+            transition: opacity 0.3s ease;
+        }
+
+        /* Player Flutuante Compacto */
+        #player-bar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95); color: #fff; padding: 10px 14px;
+            border-radius: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+            z-index: 1000; border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+            max-width: 95vw;
+            width: 350px;
+        }
+        
+        /* Linha superior: Nome da estação */
+        #station-info { 
+            font-size: 13px; 
+            font-weight: 600; 
+            width: 100%; 
+            text-align: center; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            color: #10b981; 
+        }
+
+        /* Linha inferior: Botões e Player integrados */
+        .player-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+        }
+        
+        /* Botões de Navegação e Random */
+        .station-nav-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            height: 28px;
+            border-radius: 14px;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            padding: 0 8px;
+            gap: 5px;
+        }
+
+        .station-nav-btn.icon-only {
+            width: 28px;
+            padding: 0;
+            border-radius: 50%;
+            font-size: 12px;
+        }
+
+        .station-nav-btn:hover {
+            background: #10b981;
+            color: #fff;
+            border-color: #10b981;
+        }
+
+        /* Estilo quando o Aleatório estiver ativado */
+        .station-nav-btn.random-ativo {
+            background: #2563eb !important;
+            color: #fff !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+        }
+
+        audio { height: 28px; outline: none; width: 140px; }
+
+        /* Ajuste para Telas de Celular */
+        @media (max-width: 600px) {
+            #player-bar {
+                bottom: 10px;
+                padding: 8px 10px;
+                width: 95vw;
+            }
+            #station-info {
+                font-size: 12px;
+            }
+            audio {
+                width: 110px;
+                height: 26px;
+            }
+            .station-nav-btn {
+                font-size: 10px;
+                padding: 0 6px;
+                height: 26px;
+            }
+            .station-nav-btn.icon-only {
+                width: 26px;
+                height: 26px;
+            }
+            .continent-selector {
+                top: 110px !important;
+            }
+            .continent-btn {
+                min-width: 120px !important;
+                font-size: 11px !important;
+                padding: 5px 8px !important;
+            }
+        }
+
+        /* Botões de Continentes */
+        .continent-selector {
+            position: fixed;
+            top: 140px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 1000;
+        }
+
+        .continent-btn {
+            background: rgba(15, 23, 42, 0.9);
+            color: #f1f5f9;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            font-weight: 600;
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            backdrop-filter: blur(6px);
+            transition: all 0.2s ease;
+            text-align: left;
+            min-width: 150px;
+            text-decoration: none;
+        }
+
+        .continent-btn:hover {
+            background: #10b981;
+            color: #fff;
+            border-color: #10b981;
+        }
+
+        .continent-btn.mundo {
+            background: #047857;
+            color: #fff;
+            border-color: #059669;
+        }
+
+        .continent-btn.mundo:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Aviso visual de carregamento -->
+    <div id="loading-indicator">🔄 Carregando estações...</div>
+
+    <div id="map"></div>
+
+    <!-- Botões de escolha de continente -->
+    <div class="continent-selector">
+        <a href="https://www.gabrielpereira.net.eu.org" class="continent-btn">🏠 Página inicial</a>
+        <button class="continent-btn mundo" onclick="irPara(20, 0, 2)">🌍 GLOBAL</button>
+        <button class="continent-btn" onclick="irPara(-20.5, -48.5, 5)">🌎 América do Sul</button>
+        <button class="continent-btn" onclick="irPara(40.0, -100.0, 4)">🌎 América do Norte</button>
+        <button class="continent-btn" onclick="irPara(15.0, -88.0, 5)">🌎 América Central</button>
+        <button class="continent-btn" onclick="irPara(50.0, 10.0, 4)">🌍 Europa</button>
+        <button class="continent-btn" onclick="irPara(0.0, 20.0, 3)">🌍 África</button>
+        <button class="continent-btn" onclick="irPara(15.0, 125.0, 4)">🌏 Ásia e Oceania</button>
+    </div>
+
+    <!-- Player Persistente com o Globo 🌍 e o status OFF / ON visíveis -->
+    <div id="player-bar">
+        <span id="station-info">Carregando Alpha MPB...</span>
+        <div class="player-controls">
+            <button id="random-toggle-btn" class="station-nav-btn" onclick="toggleRandomMode()" title="Alternar modo aleatório">
+                🌍 OFF
+            </button>
+            <button class="station-nav-btn icon-only" onclick="mudarEstacao(-1)" title="Estação Anterior">◀</button>
+            <audio id="audio-player" controls></audio>
+            <button class="station-nav-btn icon-only" onclick="mudarEstacao(1)" title="Próxima Estação">▶</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+    <script>
+        const map = L.map('map', { 
+            center: [-20.5, -48.5], 
+            zoom: 5, 
+            minZoom: 2,
+            maxBounds: [[-90, -180], [90, 180]],
+            maxBoundsViscosity: 1.0
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            noWrap: true,
+            bounds: [[-90, -180], [90, 180]],
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        const markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40 });
+
+        const radioIcon = L.divIcon({
+            className: 'custom-radio-icon',
+            html: `<div style="width:12px; height:12px; background:#10b981; border:2px solid #fff; border-radius:50%; box-shadow:0 0 8px #10b981;"></div>`,
+            iconSize: [12, 12]
+        });
+
+        function irPara(lat, lng, zoom) {
+            map.flyTo([lat, lng], zoom, { duration: 1.5 });
+        }
+
+        let listaEstacoes = [];
+        let indiceAtual = 0;
+        let streamAlphaUrl = '';
+        let isRandomMode = false; // Desligado por padrão (prioriza SP)
+
+        // Função para alternar o modo Aleatório e atualizar o texto do botão com o globo e o estado
+        function toggleRandomMode() {
+            isRandomMode = !isRandomMode;
+            const btn = document.getElementById('random-toggle-btn');
+            if (isRandomMode) {
+                btn.innerHTML = '🌍 ON';
+                btn.classList.add('random-ativo');
+            } else {
+                btn.innerHTML = '🌍 OFF';
+                btn.classList.remove('random-ativo');
+            }
+        }
+
+        function tratarStreamUrl(station) {
+            let rawUrl = station.url_resolved || station.url;
+            if (!rawUrl) return '';
+            if (window.location.protocol === 'https:' && rawUrl.startsWith('http://')) {
+                return rawUrl.replace('http://', 'https://');
+            }
+            return rawUrl;
+        }
+
+        function tocarEstacao(station) {
+            const streamUrl = tratarStreamUrl(station);
+            if (!streamUrl) return;
+
+            document.getElementById('station-info').innerText = station.name;
+            const audio = document.getElementById('audio-player');
+            audio.src = streamUrl;
+            audio.play().catch(err => console.log("Erro ao reproduzir:", err));
+
+            // Atualiza a notificação do Android com a estação atual e o seu site
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: station.name,                  
+                    artist: 'gabrielpereira.net.eu.org',   
+                    album: 'Rádio Global'
+                });
+            }
+
+            const lat = parseFloat(station.geo_lat);
+            const lng = parseFloat(station.geo_long);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                // CORRIGIDO: Agora usa o zoom 14 para aproximar o mapa ao clicar no marcador
+                map.flyTo([lat, lng], 14, { duration: 1.0 });
+            }
+        }
+
+        function mudarEstacao(direcao) {
+            if (listaEstacoes.length === 0) return;
+
+            if (isRandomMode) {
+                if (listaEstacoes.length > 1) {
+                    let novoIndice;
+                    do {
+                        novoIndice = Math.floor(Math.random() * listaEstacoes.length);
+                    } while (novoIndice === indiceAtual);
+                    indiceAtual = novoIndice;
+                } else {
+                    indiceAtual = 0;
+                }
+            } else {
+                const radiosSP = listaEstacoes.filter(s => 
+                    (s.state && s.state.toLowerCase().includes('são paulo')) ||
+                    (s.state && s.state.toLowerCase().includes('sao paulo'))
+                );
+
+                if (radiosSP.length > 0) {
+                    const stationSP = radiosSP[Math.floor(Math.random() * radiosSP.length)];
+                    const encontrado = listaEstacoes.findIndex(s => s.stationuuid === stationSP.stationuuid);
+                    if (encontrado !== -1) indiceAtual = encontrado;
+                } else {
+                    indiceAtual = Math.floor(Math.random() * listaEstacoes.length);
+                }
+            }
+
+            const station = listaEstacoes[indiceAtual];
+            tocarEstacao(station);
+        }
+
+        document.addEventListener('click', function iniciarAudioGlobal() {
+            const audio = document.getElementById('audio-player');
+            if (audio.paused && streamAlphaUrl) {
+                audio.src = streamAlphaUrl;
+                audio.play().catch(err => console.log("Erro ao iniciar:", err));
+            }
+            document.removeEventListener('click', iniciarAudioGlobal);
+        }, { once: true });
+
+        const apiServers = [
+            'https://all.api.radio-browser.info',
+            'https://de1.api.radio-browser.info',
+            'https://nl1.api.radio-browser.info'
+        ];
+
+        async function loadRadios() {
+            for (let server of apiServers) {
+                try {
+                    const resAlpha = await fetch(`${server}/json/stations/search?name=Alpha%20MPB&limit=5&hidebroken=true`);
+                    const stationsAlpha = resAlpha.resAlpha ? [] : (resAlpha.ok ? await resAlpha.json() : []);
+                    
+                    if (stationsAlpha.length > 0) {
+                        const alphaStation = stationsAlpha.find(s => s.url_resolved || s.url);
+                        if (alphaStation) {
+                            streamAlphaUrl = tratarStreamUrl(alphaStation);
+                            document.getElementById('station-info').innerText = alphaStation.name;
+                            const audio = document.getElementById('audio-player');
+                            audio.src = streamAlphaUrl;
+                            
+                            if ('mediaSession' in navigator) {
+                                navigator.mediaSession.metadata = new MediaMetadata({
+                                    title: alphaStation.name,
+                                    artist: 'gabrielpereira.net.eu.org',
+                                    album: 'Rádio Global'
+                                });
+                            }
+
+                            audio.play().catch(() => {
+                                console.log("Autoplay barrado pelo navegador.");
+                            });
+                        }
+                    }
+
+                    const [resGlobal, resBrasil] = await Promise.all([
+                        fetch(`${server}/json/stations/search?has_geo=true&limit=8000&hidebroken=true`),
+                        fetch(`${server}/json/stations/search?countrycode=BR&has_geo=true&limit=3000&hidebroken=true`)
+                    ]);
+
+                    if (!resGlobal.ok && !resBrasil.ok) continue;
+
+                    const stationsGlobal = resGlobal.ok ? await resGlobal.json() : [];
+                    const stationsBrasil = resBrasil.ok ? await resBrasil.json() : [];
+
+                    const mapStations = new Map();
+                    [...stationsBrasil, ...stationsGlobal].forEach(s => {
+                        if (s.stationuuid && !mapStations.has(s.stationuuid)) {
+                            mapStations.set(s.stationuuid, s);
+                        }
+                    });
+
+                    listaEstacoes = Array.from(mapStations.values());
+                    const markerList = [];
+
+                    mapStations.forEach((station) => {
+                        const lat = parseFloat(station.geo_lat);
+                        const lng = parseFloat(station.geo_long);
+
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            const marker = L.marker([lat, lng], { icon: radioIcon });
+                            
+                            marker.on('click', () => {
+                                tocarEstacao(station);
+                                const encontrado = listaEstacoes.findIndex(s => s.stationuuid === station.stationuuid);
+                                if (encontrado !== -1) indiceAtual = encontrado;
+                            });
+
+                            marker.bindTooltip(`<b>${station.name}</b><br>${station.state || ''} - ${station.country || ''}`, { direction: 'top' });
+                            markerList.push(marker);
+                        }
+                    });
+
+                    if (markerList.length > 0) {
+                        markers.addLayers(markerList);
+                        map.addLayer(markers);
+
+                        setTimeout(() => {
+                            map.invalidateSize();
+                        }, 200);
+
+                        const loader = document.getElementById('loading-indicator');
+                        if (loader) {
+                            loader.style.opacity = '0';
+                            setTimeout(() => loader.remove(), 300);
+                        }
+
+                        break;
+                    }
+                } catch (e) {
+                    console.warn(`Tentando próximo servidor...`);
+                }
+            }
+        }
+
+        loadRadios();
+    </script>
+</body>
+</html>
