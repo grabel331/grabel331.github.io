@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "org.eu.net.gabrielpereira.radio",
+        "sha256_cert_fingerprints": ["80:20:BC:0D:31:9A:A9:93:E7:C5:77:4A:16:AE:BC:EB:FD:AC:B3:38:4F:A2:CE:3E:6C:E9:79:BD:D6:13:0D:9B"]
+      }
+    }]
