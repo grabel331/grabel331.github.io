@@ -248,7 +248,7 @@
     </style>
 </head>
 <body>
-    <div id="loading-indicator">Carregando estações...</div>
+    <div id="loading-indicator">✌︎㋡ 🔄Carregando estações...</div>
     <div id="map"></div>
 
     <div class="top-left-actions">
@@ -538,7 +538,7 @@
             const btn = document.getElementById('fav-current-btn');
             const saved = estacaoAtual && isFavorite(estacaoAtual.stationuuid);
             btn.classList.toggle('saved', Boolean(saved));
-            btn.innerHTML = saved ? '🫶 <span class="fav-label"></span>' : '❤️<span class="fav-label"></span>';
+            btn.innerHTML = saved ? '❤️<span class="fav-label"></span>' : '❤️<span class="fav-label"></span>';
         }
         function irPara(lat, lng, zoom, el) {
             document.querySelectorAll('.continent-btn').forEach(b => b.classList.remove('active'));
