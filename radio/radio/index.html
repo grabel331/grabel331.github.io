@@ -14,10 +14,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 	
 	<link rel="manifest" href="./manifest.webmanifest" />
-	<link rel="manifest" href="./manifest.webmanifest" />
-	
-	
-	
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -143,9 +140,30 @@
         .continent-btn:hover, .continent-btn.active { background: #059669; border-color: #10b981; color: #fff; }
         .continent-btn.mundo { background: #047857; border-color: #059669; }
 
-        #player-bar {
+        /* Container fixo inferior para o Player e o Anúncio */
+        #bottom-container {
             position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
             width: calc(100vw - 24px); max-width: 440px; z-index: 1000;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+
+        /* Bloco do Banner de Anúncio */
+        #ad-banner-container {
+            width: 100%;
+            background: rgba(15,23,42,0.85);
+            border: 1px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 4px;
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+
+        #player-bar {
+            width: 100%;
             background: rgba(15,23,42,0.95); border: 1px solid rgba(255,255,255,0.15);
             border-radius: 18px; padding: 10px 14px;
             box-shadow: 0 14px 34px rgba(0,0,0,0.7); backdrop-filter: blur(10px);
@@ -267,30 +285,49 @@
         </div>
     </div>
 
-    <div id="player-bar">
-        <audio id="audio-player" playsinline></audio>
-        <div class="player-top">
-            <div class="station-meta" onclick="focarEstacaoAtual()" title="Centralizar mapa nesta estação">
-                <div id="station-info">Carregando estações...</div>
-                <div id="station-sub">Conectando à rede global de rádios</div>
-            </div>
-            <button id="fav-current-btn" class="fav-toggle-btn" onclick="toggleFavoriteCurrent()" style="display:none">
-                ♥ <span class="fav-label">Favoritar</span>
-            </button>
+    <!-- Container agrupando o Banner e o Player na parte inferior -->
+    <div id="bottom-container">
+        <!-- ESPAÇO PARA O ANÚNCIO (Cole seu script ou tag de anúncio aqui dentro) -->
+        <div id="ad-banner-container">
+            <span style="font-size: 11px; color: #64748b;"><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8360786661548396"
+     crossorigin="anonymous"></script>
+<!-- anuncio1 -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-8360786661548396"
+     data-ad-slot="6304717066"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script></span>
         </div>
-        <div class="player-controls">
-            <div class="left-ctrl">
-                <button id="random-toggle-btn" class="pill-btn" onclick="toggleRandomMode()" title="Alternar modo aleatório global (OFF prioriza SP)">🌍 OFF</button>
-                <button class="icon-btn" onclick="focarEstacaoAtual()" title="Focar na rádio atual" aria-label="Focar na rádio atual">◎</button>
+
+        <div id="player-bar">
+            <audio id="audio-player" style="display:none;" playsinline></audio>
+            <div class="player-top">
+                <div class="station-meta" onclick="focarEstacaoAtual()" title="Centralizar mapa nesta estação">
+                    <div id="station-info">Carregando estações...</div>
+                    <div id="station-sub">Conectando à rede global de rádios</div>
+                </div>
+                <button id="fav-current-btn" class="fav-toggle-btn" onclick="toggleFavoriteCurrent()" style="display:none">
+                    ♥ <span class="fav-label">Favoritar</span>
+                </button>
             </div>
-            <div class="center-ctrl">
-                <button class="icon-btn" onclick="mudarEstacao(-1)" title="Estação Anterior">◀</button>
-                <button class="play-btn" id="play-pause-btn" onclick="togglePlayPause()" title="Tocar / Pausar">▶</button>
-                <button class="icon-btn" onclick="mudarEstacao(1)" title="Próxima Estação">▶</button>
-            </div>
-            <div class="right-ctrl">
-                <button class="icon-btn" id="mute-btn" onclick="toggleMute()" title="Silenciar">🔊</button>
-                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.85" oninput="setVolume(this.value)" />
+            <div class="player-controls">
+                <div class="left-ctrl">
+                    <button id="random-toggle-btn" class="pill-btn" onclick="toggleRandomMode()" title="Alternar modo aleatório global (OFF prioriza SP)">🌍 OFF</button>
+                    <button class="icon-btn" onclick="focarEstacaoAtual()" title="Focar na rádio atual" aria-label="Focar na rádio atual">◎</button>
+                </div>
+                <div class="center-ctrl">
+                    <button class="icon-btn" onclick="mudarEstacao(-1)" title="Estação Anterior">◀</button>
+                    <button class="play-btn" id="play-pause-btn" onclick="togglePlayPause()" title="Tocar / Pausar">▶</button>
+                    <button class="icon-btn" onclick="mudarEstacao(1)" title="Próxima Estação">▶</button>
+                </div>
+                <div class="right-ctrl">
+                    <button class="icon-btn" id="mute-btn" onclick="toggleMute()" title="Silenciar">🔊</button>
+                    <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.85" oninput="setVolume(this.value)" />
+                </div>
             </div>
         </div>
     </div>
@@ -447,18 +484,37 @@
             focusStation(station, fromMapClick);
 
             audio.src = url;
-            audio.play().catch(() => {
+            audio.play().then(() => {
+                if ('mediaSession' in navigator) {
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: station.name,
+                        artist: 'GabrielPereira.net.eu.org',
+                        album: getLocationLabel(station),
+                        artwork: [
+                            { src: 'https://cdn-icons-png.flaticon.com/512/3076/3076785.png', sizes: '512x512', type: 'image/png' }
+                        ]
+                    });
+
+                    navigator.mediaSession.setActionHandler('play', () => {
+                        audio.play().catch(err => console.log("Erro no play:", err));
+                    });
+
+                    navigator.mediaSession.setActionHandler('pause', () => {
+                        audio.pause();
+                    });
+
+                    navigator.mediaSession.setActionHandler('previoustrack', () => {
+                        mudarEstacao(-1);
+                    });
+
+                    navigator.mediaSession.setActionHandler('nexttrack', () => {
+                        mudarEstacao(1);
+                    });
+                }
+            }).catch(() => {
                 document.getElementById('station-sub').textContent = 'Toque em ▶ ou em uma rádio no mapa';
                 document.getElementById('play-pause-btn').textContent = '▶';
             });
-
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.metadata = new MediaMetadata({
-                    title: station.name,
-                    artist: 'GabrielPereira.net.eu.org',
-                    album: getLocationLabel(station)
-                });
-            }
         }
         audio.addEventListener('playing', () => {
             document.getElementById('play-pause-btn').textContent = '❚❚';
@@ -685,7 +741,6 @@
                     document.getElementById('loading-indicator').classList.add('hidden');
                     if (alpha || listaEstacoes[0]) tocarEstacao(alpha || listaEstacoes[0], false);
 
-                    // Carregar estações globais em segundo plano
                     fetch(`${server}/json/stations/search?has_geo_info=true&limit=8000&hidebroken=true`)
                         .then(r => r.ok ? r.json() : [])
                         .then(gl => {
