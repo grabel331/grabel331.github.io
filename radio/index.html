@@ -21,10 +21,10 @@
         }
         #map { width: 100vw; height: 100vh; background: #0b1120; }
 
-        /* Posicionamento do Zoom no Canto Inferior Direito */
+        /* Posicionamento do Zoom no Canto Inferior Direito (ajustado para não cobrir o player no Android) */
         .leaflet-control-zoom {
             position: fixed !important;
-            bottom: 84px !important;
+            bottom: 130px !important;
             right: 12px !important;
             z-index: 900 !important;
             border: 1px solid rgba(255,255,255,0.12) !important;
