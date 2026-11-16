@@ -21,7 +21,12 @@
         }
         #map { width: 100vw; height: 100vh; background: #0b1120; }
 
+        /* Posicionamento do Zoom no Canto Inferior Direito */
         .leaflet-control-zoom {
+            position: fixed !important;
+            bottom: 84px !important;
+            right: 12px !important;
+            z-index: 900 !important;
             border: 1px solid rgba(255,255,255,0.12) !important;
             border-radius: 10px !important;
             overflow: hidden;
@@ -104,7 +109,11 @@
         }
         #loading-indicator.hidden { display: none; }
 
-        .top-actions {
+        .top-left-actions {
+            position: fixed; top: 12px; left: 12px; z-index: 900;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .top-right-actions {
             position: fixed; top: 12px; right: 12px; z-index: 900;
             display: flex; align-items: center; gap: 8px;
         }
@@ -112,11 +121,10 @@
             background: rgba(15,23,42,0.92); color: #f1f5f9;
             border: 1px solid rgba(255,255,255,0.15); border-radius: 12px;
             padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
-            display: flex; align-items: center; gap: 6px;
+            display: flex; align-items: center; gap: 6px; text-decoration: none;
             box-shadow: 0 6px 18px rgba(0,0,0,0.45); backdrop-filter: blur(8px);
         }
         .top-btn:hover { border-color: rgba(16,185,129,0.6); color: #fff; }
-        .top-btn.fav-has { border-color: rgba(245,158,11,0.45); }
 
         .continent-selector {
             position: fixed; top: 104px; left: 12px; z-index: 900;
@@ -243,7 +251,11 @@
     <div id="loading-indicator">Carregando estações...</div>
     <div id="map"></div>
 
-    <div class="top-actions">
+    <div class="top-left-actions">
+        <a class="top-btn" id="home-btn" href="https://gabrielpereira.net.eu.org" title="Ir para a Página Inicial">🏠 Página Inicial</a>
+    </div>
+
+    <div class="top-right-actions">
         <button class="top-btn" id="open-favs-btn">★ Favoritos (<span id="fav-count">0</span>)</button>
         <button class="top-btn" id="open-explore-btn">🔍 Buscar</button>
     </div>
@@ -531,7 +543,6 @@
         function irPara(lat, lng, zoom, el) {
             document.querySelectorAll('.continent-btn').forEach(b => b.classList.remove('active'));
             if (el) el.classList.add('active');
-            document.getElementById('continent-list').classList.remove('open');
             map.flyTo([lat, lng], zoom, { duration: 1.5 });
         }
         function rebuildMarkers() {
@@ -679,7 +690,6 @@
                     document.getElementById('loading-indicator').classList.add('hidden');
                     if (alpha || listaEstacoes[0]) tocarEstacao(alpha || listaEstacoes[0], false);
 
-                    // Carregar estações globais em segundo plano
                     fetch(`${server}/json/stations/search?has_geo_info=true&limit=8000&hidebroken=true`)
                         .then(r => r.ok ? r.json() : [])
                         .then(gl => {
