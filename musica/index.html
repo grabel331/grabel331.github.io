@@ -243,7 +243,8 @@
 
     .search-input,
     .playlist-input,
-    .playlist-select {
+    .playlist-select,
+    .sort-select {
       background: var(--panel-2);
       color: var(--text);
       border: 1px solid var(--border);
@@ -258,16 +259,32 @@
       flex: 1;
     }
 
+    .sort-select {
+      padding: 7px 10px;
+      font-size: 0.82rem;
+    }
+
     .search-input:focus,
     .playlist-input:focus,
-    .playlist-select:focus {
+    .playlist-select:focus,
+    .sort-select:focus {
       border-color: var(--accent);
+    }
+
+    .view-tabs-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
     }
 
     .view-tabs {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
+      flex: 1;
+      min-width: 0;
     }
 
     .tab-btn,
@@ -292,18 +309,25 @@
 
     .playlist-bar {
       display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .playlist-create-row,
+    .playlist-actions-row {
+      display: flex;
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
     }
 
-    .playlist-input {
+    .playlist-select {
       flex: 1 1 160px;
+      max-width: 100%;
     }
 
-    .playlist-select {
-      flex: 1 1 140px;
-      max-width: 100%;
+    .playlist-input {
+      flex: 1 1 180px;
     }
 
     .playlist {
@@ -516,9 +540,15 @@
 
       .search-input,
       .playlist-input,
-      .playlist-select {
+      .playlist-select,
+      .sort-select {
         padding: 6px 8px;
         font-size: 0.84rem;
+      }
+
+      .sort-select {
+        padding: 5px 8px;
+        font-size: 0.76rem;
       }
 
       .tab-btn,
@@ -578,28 +608,42 @@
           <button id="clear-search-btn" class="mini-btn" type="button" title="Limpar busca">Limpar</button>
         </div>
 
-        <div id="view-tabs" class="view-tabs" role="tablist" aria-label="Filtros e playlists">
-          <button class="tab-btn active" type="button" data-view="all">Todas</button>
-          <button class="tab-btn" type="button" data-view="favorites">Favoritos</button>
+        <div class="view-tabs-row">
+          <div id="view-tabs" class="view-tabs" role="tablist" aria-label="Filtros e playlists">
+            <button class="tab-btn active" type="button" data-view="all">Todas</button>
+            <button class="tab-btn" type="button" data-view="favorites">Favoritos</button>
+          </div>
+
+          <select id="sort-select" class="sort-select" aria-label="Ordenar lista de faixas" title="Ordenar lista">
+            <option value="default">Ordem: Padrão</option>
+            <option value="alpha">Ordem: A–Z</option>
+            <option value="numeric">Ordem: Numérica</option>
+          </select>
         </div>
 
         <div class="playlist-bar">
-          <input
-            id="new-playlist-input"
-            class="playlist-input"
-            type="text"
-            placeholder="noLogin playlist salva em localStorage..   "
-            aria-label="Nome da nova playlist      "
-          />
-          <button id="create-playlist-btn" class="mini-btn" type="button">+ Playlist</button>
-          <select id="active-playlist-select" class="playlist-select" aria-label="Selecionar playlist para gerenciar">
-            <option value="">Sem playlist ativa</option>
-          </select>
-          <button id="delete-playlist-btn" class="mini-btn" type="button" title="Excluir playlist selecionada">Excluir</button>
-          <button id="export-playlists-btn" class="mini-btn" type="button" title="Exportar playlists e favoritos em JSON">Exportar</button>
-          <button id="import-playlists-btn" class="mini-btn" type="button" title="Importar playlists e favoritos de um JSON">Importar</button>
-          <button id="export-m3u-btn" class="mini-btn" type="button" title="Baixar lista M3U com todas as músicas da raiz para o AIMP">M3U</button>
-          <input id="import-playlists-file" type="file" accept="application/json,.json" hidden />
+          <div class="playlist-create-row">
+            <select id="active-playlist-select" class="playlist-select" aria-label="Selecionar playlist para gerenciar">
+              <option value="">Sem playlist ativa</option>
+            </select>
+            <input
+              id="new-playlist-input"
+              class="playlist-input"
+              type="text"
+              placeholder="noLogin playlist salva em localStorage..   "
+              aria-label="Nome da nova playlist      "
+            />
+            <button id="create-playlist-btn" class="mini-btn" type="button">+ Playlist</button>
+          </div>
+
+          <div class="playlist-actions-row">
+            <button id="rename-playlist-btn" class="mini-btn" type="button" title="Editar/renomear playlist selecionada">Editar</button>
+            <button id="delete-playlist-btn" class="mini-btn" type="button" title="Excluir playlist selecionada">Excluir</button>
+            <button id="export-playlists-btn" class="mini-btn" type="button" title="Exportar playlists e favoritos em JSON">Exportar</button>
+            <button id="import-playlists-btn" class="mini-btn" type="button" title="Importar playlists e favoritos de um JSON">Importar</button>
+            <button id="export-m3u-btn" class="mini-btn" type="button" title="Baixar lista M3U com todas as músicas da raiz para o AIMP">M3U</button>
+            <input id="import-playlists-file" type="file" accept="application/json,.json" hidden />
+          </div>
         </div>
       </div>
 
@@ -694,9 +738,11 @@
     const searchInput = document.getElementById("search-input");
     const clearSearchBtn = document.getElementById("clear-search-btn");
     const viewTabsEl = document.getElementById("view-tabs");
+    const sortSelect = document.getElementById("sort-select");
     const newPlaylistInput = document.getElementById("new-playlist-input");
     const createPlaylistBtn = document.getElementById("create-playlist-btn");
     const activePlaylistSelect = document.getElementById("active-playlist-select");
+    const renamePlaylistBtn = document.getElementById("rename-playlist-btn");
     const deletePlaylistBtn = document.getElementById("delete-playlist-btn");
     const exportPlaylistsBtn = document.getElementById("export-playlists-btn");
     const importPlaylistsBtn = document.getElementById("import-playlists-btn");
@@ -730,6 +776,7 @@
 
     let searchQuery = "";
     let currentView = "all";
+    let sortMode = "default";
     let selectedPlaylistName = "";
     let favorites = new Set();
     let playlists = {};
@@ -924,6 +971,45 @@
       });
     }
 
+    function getLeadingNumber(text) {
+      const match = String(text || "").trim().match(/^(\d+)/);
+      return match ? Number(match[1]) : null;
+    }
+
+    function sortTrackList(list, mode) {
+      if (mode === "default") return list;
+      const copy = [...list];
+
+      if (mode === "alpha") {
+        copy.sort((a, b) =>
+          (a.title || a.file || "").localeCompare(b.title || b.file || "", "pt-BR", {
+            sensitivity: "base"
+          })
+        );
+        return copy;
+      }
+
+      if (mode === "numeric") {
+        copy.sort((a, b) => {
+          const titleA = a.title || a.file || "";
+          const titleB = b.title || b.file || "";
+          const numA = getLeadingNumber(titleA);
+          const numB = getLeadingNumber(titleB);
+
+          if (numA !== null && numB !== null) {
+            if (numA !== numB) return numA - numB;
+            return titleA.localeCompare(titleB, "pt-BR", { sensitivity: "base" });
+          }
+          if (numA !== null) return -1;
+          if (numB !== null) return 1;
+          return titleA.localeCompare(titleB, "pt-BR", { sensitivity: "base" });
+        });
+        return copy;
+      }
+
+      return copy;
+    }
+
     function computeVisibleTracks() {
       let base = allTracks;
 
@@ -945,7 +1031,7 @@
         );
       }
 
-      return base;
+      return sortTrackList(base, sortMode);
     }
 
     function buildQueue(keepFile = null) {
@@ -1175,6 +1261,11 @@
       applyFilters(currentTrack()?.file || null, false);
     });
 
+    sortSelect.addEventListener("change", () => {
+      sortMode = sortSelect.value;
+      applyFilters(currentTrack()?.file || null, false);
+    });
+
     [...viewTabsEl.querySelectorAll('[data-view="all"], [data-view="favorites"]')].forEach((btn) => {
       btn.addEventListener("click", () => setView(btn.dataset.view));
     });
@@ -1195,6 +1286,36 @@
     activePlaylistSelect.addEventListener("change", () => {
       selectedPlaylistName = activePlaylistSelect.value;
       renderPlaylist();
+    });
+
+    renamePlaylistBtn.addEventListener("click", () => {
+      if (!selectedPlaylistName || !playlists[selectedPlaylistName]) {
+        setStatus("Selecione uma playlist para editar.");
+        return;
+      }
+      const typedName = (newPlaylistInput.value || "").trim();
+      const nextName = typedName || (window.prompt("Novo nome da playlist:", selectedPlaylistName) || "").trim();
+      if (!nextName || nextName === selectedPlaylistName) return;
+
+      const oldName = selectedPlaylistName;
+      const oldTracks = playlists[oldName] || [];
+      const mergedTracks = Array.isArray(playlists[nextName])
+        ? [...new Set([...playlists[nextName], ...oldTracks])]
+        : oldTracks;
+
+      playlists[nextName] = mergedTracks;
+      delete playlists[oldName];
+      savePlaylists();
+
+      selectedPlaylistName = nextName;
+      if (typedName) newPlaylistInput.value = "";
+      if (currentView === `playlist:${oldName}`) {
+        currentView = `playlist:${nextName}`;
+      }
+
+      refreshPlaylistUIControls();
+      applyFilters(currentTrack()?.file || null, false);
+      setStatus(`Playlist renomeada para "${nextName}".`);
     });
 
     deletePlaylistBtn.addEventListener("click", () => {
