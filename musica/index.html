@@ -17,20 +17,28 @@
 
     * { box-sizing: border-box; }
 
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
+      width: 100%;
       min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 16px;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
     }
 
+    .player-stage {
+      width: 100%;
+      min-height: 100vh;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: minmax(320px, 400px) minmax(300px, 1fr);
+      gap: 24px;
+      align-items: center;
+    }
+
     .player {
       width: 100%;
-      max-width: 480px;
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 14px;
@@ -57,13 +65,14 @@
 
     .title {
       margin: 0 0 4px;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       line-height: 1.25;
+      word-break: break-word;
     }
 
     .artist {
       margin: 0;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       color: var(--muted);
     }
 
@@ -74,7 +83,7 @@
       align-items: center;
       font-size: 0.78rem;
       color: var(--muted);
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
 
     input[type="range"] {
@@ -85,23 +94,44 @@
 
     .controls {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 14px;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
     }
 
-    button {
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      display: inline-grid;
+      place-items: center;
       background: var(--panel-2);
       color: var(--text);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 7px 10px;
-      font-size: 0.82rem;
+      border-radius: 10px;
       cursor: pointer;
     }
 
-    button:hover,
-    button.active-mode {
+    .icon-btn.play-main {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+    }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .icon-btn.play-main svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .icon-btn:hover,
+    .icon-btn.active-mode {
       border-color: var(--accent);
       color: var(--accent);
     }
@@ -112,25 +142,43 @@
       gap: 10px;
       font-size: 0.82rem;
       color: var(--muted);
-      margin-bottom: 16px;
+    }
+
+    .volume-icon {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      flex-shrink: 0;
+    }
+
+    .tracks-panel {
+      width: 100%;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 12px;
     }
 
     .playlist {
       list-style: none;
       margin: 0;
       padding: 0;
+      width: 100%;
+      max-width: 720px;
       border-top: 1px solid var(--border);
     }
 
     .playlist li {
-      padding: 10px 8px;
+      padding: 12px 10px;
       border-bottom: 1px solid var(--border);
-      font-size: 0.88rem;
+      font-size: 0.9rem;
       cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      gap: 14px;
     }
 
     .playlist li:hover {
@@ -149,41 +197,85 @@
       min-height: 1.1em;
       word-break: break-word;
     }
+
+    @media (max-width: 820px) {
+      .player-stage {
+        grid-template-columns: 1fr;
+        align-content: start;
+      }
+
+      .tracks-panel {
+        max-height: none;
+        overflow-y: visible;
+        padding: 0;
+      }
+    }
   </style>
 </head>
 <body>
-  <main class="player">
-    <div class="now-playing">
-      <img id="cover" class="cover" alt="Capa da faixa" />
-      <div>
-        <h1 id="title" class="title">Carregando...</h1>
-        <p id="artist" class="artist"></p>
+  <main class="player-stage">
+    <section class="player" aria-label="Controles do player">
+      <div class="now-playing">
+        <img id="cover" class="cover" alt="Capa da faixa" />
+        <div>
+          <h1 id="title" class="title">Carregando...</h1>
+          <p id="artist" class="artist"></p>
+        </div>
       </div>
-    </div>
 
-    <audio id="audio" preload="metadata"></audio>
+      <audio id="audio" preload="metadata"></audio>
 
-    <div class="progress-area">
-      <span id="current-time">0:00</span>
-      <input id="seek" type="range" min="0" max="100" value="0" step="0.1" />
-      <span id="duration">0:00</span>
-    </div>
+      <div class="progress-area">
+        <span id="current-time">0:00</span>
+        <input id="seek" type="range" min="0" max="100" value="0" step="0.1" aria-label="Progresso da faixa" />
+        <span id="duration">0:00</span>
+      </div>
 
-    <div class="controls">
-      <button id="shuffle-btn" type="button">Shuffle: Off</button>
-      <button id="prev-btn" type="button">Anterior</button>
-      <button id="play-btn" type="button">Play</button>
-      <button id="next-btn" type="button">Próxima</button>
-      <button id="repeat-btn" type="button">Repeat: Off</button>
-    </div>
+      <div class="controls">
+        <button id="shuffle-btn" class="icon-btn" type="button" title="Aleatório" aria-label="Aleatório">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M17 3h4v4h-2V6.41l-3.59 3.59-1.41-1.41L17.59 5H17V3zM3 6h5.59l3.12 3.12-1.41 1.41L7.76 8H3V6zm14 11h.59l-3.59-3.59 1.41-1.41L19 15.59V14h2v4h-4v-1zM3 16h4.76l7.83-7.83 1.41 1.41L8.59 18H3v-2z"/>
+          </svg>
+        </button>
 
-    <div class="volume-area">
-      <label for="volume">Volume</label>
-      <input id="volume" type="range" min="0" max="1" step="0.01" value="0.8" />
-    </div>
+        <button id="prev-btn" class="icon-btn" type="button" title="Anterior" aria-label="Anterior">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/>
+          </svg>
+        </button>
 
-    <ul id="playlist" class="playlist"></ul>
-    <div id="status" class="status"></div>
+        <button id="play-btn" class="icon-btn play-main" type="button" title="Play / Pause" aria-label="Play / Pause">
+          <svg id="play-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </button>
+
+        <button id="next-btn" class="icon-btn" type="button" title="Próxima" aria-label="Próxima">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+          </svg>
+        </button>
+
+        <button id="repeat-btn" class="icon-btn" type="button" title="Repetir" aria-label="Repetir">
+          <svg id="repeat-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="volume-area">
+        <svg class="volume-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+        <input id="volume" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume" />
+      </div>
+
+      <div id="status" class="status"></div>
+    </section>
+
+    <section class="tracks-panel" aria-label="Lista de faixas">
+      <ul id="playlist" class="playlist"></ul>
+    </section>
   </main>
 
   <script id="playlist-data" type="application/json">
@@ -209,10 +301,12 @@
     const statusEl = document.getElementById("status");
 
     const playBtn = document.getElementById("play-btn");
+    const playIcon = document.getElementById("play-icon");
     const prevBtn = document.getElementById("prev-btn");
     const nextBtn = document.getElementById("next-btn");
     const shuffleBtn = document.getElementById("shuffle-btn");
     const repeatBtn = document.getElementById("repeat-btn");
+    const repeatIcon = document.getElementById("repeat-icon");
 
     const placeholderCover =
       "data:image/svg+xml;utf8," +
@@ -229,6 +323,22 @@
     let currentIndex = 0;
     let isShuffle = false;
     let repeatMode = "none";
+
+    function setPlayIcon(isPlaying) {
+      playIcon.innerHTML = isPlaying
+        ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'
+        : '<path d="M8 5v14l11-7z"/>';
+    }
+
+    function setRepeatIcon(mode) {
+      if (mode === "one") {
+        repeatIcon.innerHTML =
+          '<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2v-4h-1l-1 .5v1h1V15h1z"/>';
+      } else {
+        repeatIcon.innerHTML =
+          '<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>';
+      }
+    }
 
     function setStatus(msg) {
       statusEl.textContent = msg || "";
@@ -332,7 +442,7 @@
       renderPlaylist();
 
       if (autoPlay) {
-        audio.play().catch(() => setStatus("Clique em Play para iniciar a reprodução."));
+        audio.play().catch(() => setStatus("Clique no botão Play para iniciar a reprodução."));
       }
     }
 
@@ -378,7 +488,6 @@
     shuffleBtn.addEventListener("click", () => {
       const activeId = currentTrack()?.id;
       isShuffle = !isShuffle;
-      shuffleBtn.textContent = `Shuffle: ${isShuffle ? "On" : "Off"}`;
       shuffleBtn.classList.toggle("active-mode", isShuffle);
       buildQueue(activeId);
       renderPlaylist();
@@ -387,8 +496,8 @@
     repeatBtn.addEventListener("click", () => {
       const modes = ["none", "all", "one"];
       repeatMode = modes[(modes.indexOf(repeatMode) + 1) % modes.length];
-      repeatBtn.textContent = `Repeat: ${repeatMode}`;
       repeatBtn.classList.toggle("active-mode", repeatMode !== "none");
+      setRepeatIcon(repeatMode);
     });
 
     volumeEl.addEventListener("input", () => {
@@ -413,12 +522,12 @@
     });
 
     audio.addEventListener("play", () => {
-      playBtn.textContent = "Pause";
+      setPlayIcon(true);
       if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
     });
 
     audio.addEventListener("pause", () => {
-      playBtn.textContent = "Play";
+      setPlayIcon(false);
       if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
     });
 
@@ -457,6 +566,9 @@
 
     async function init() {
       audio.volume = Number(volumeEl.value);
+      setPlayIcon(false);
+      setRepeatIcon(repeatMode);
+
       try {
         tracks = await fetchTracksFromGitHub();
       } catch (_) {
