@@ -625,7 +625,6 @@
                 const hay = `${s.name} ${s.country || ''} ${s.state || ''} ${s.tags || ''}`.toLowerCase();
                 if (!q || hay.includes(q)) {
                     items.push(s);
-                    if (items.length >= 80) break;
                 }
             }
             if (!items.length) {
