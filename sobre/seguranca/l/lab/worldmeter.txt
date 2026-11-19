@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Worldometer - Geral e Brasil</title>
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: #131a2a;
+      --border-color: #243049;
+      --text-color: #e2e8f0;
+      --accent: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      padding: 14px 20px;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    /* Barra de Navegação / Abas */
+    .nav-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border-color);
+      z-index: 10;
+    }
+
+    .nav-btn {
+      background: var(--card-bg);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover, .nav-btn.active {
+      background: var(--accent);
+      color: #0b0f19;
+      font-weight: 600;
+      border-color: var(--accent);
+    }
+
+    /* Container Principal */
+    .content-container {
+      flex: 1;
+      position: relative;
+      background: #ffffff;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .iframe-view {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: none;
+    }
+
+    .iframe-view.active {
+      display: block;
+    }
+
+    /* Janela recortada para o Brasil dentro do Worldometer */
+    .brazil-viewport {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    .brazil-viewport iframe {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 780px;
+      height: 5000px;
+      top: -220px; /* Ajuste o valor se precisar subir ou descer o foco da página do Brasil */
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Worldometer — Visão Global e Brasil</h1>
+    <p>Dados em tempo real extraídos diretamente do [Worldometer](https://www.worldometers.info/)</p>
+  </header>
+
+  <!-- Botões de Navegação -->
+  <nav class="nav-bar" id="navBar">
+    <button class="nav-btn active" data-target="worldometer">🌍 Worldometer (Home)</button>
+    <button class="nav-btn" data-target="brazil">🇧🇷 Brasil (Worldometer)</button>
+  </nav>
+
+  <!-- Janelas de Visualização -->
+  <main class="content-container">
+    <!-- Home / Geral -->
+    <iframe id="view-worldometer" class="iframe-view active" src="https://www.worldometers.info/" title="Worldometer Home"></iframe>
+
+    <!-- Visão Filtrada do Brasil -->
+    <div id="view-brazil" class="iframe-view">
+      <div class="brazil-viewport">
+        <iframe src="https://www.worldometers.info/world-population/brazil-population/" title="Brazil Worldometer"></iframe>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const navBar = document.getElementById("navBar");
+    
+    navBar.addEventListener("click", (e) => {
+      if (!e.target.classList.contains("nav-btn")) return;
+
+      // Atualiza o botão ativo
+      document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
+      e.target.classList.add("active");
+
+      const targetName = e.target.dataset.target;
+
+      // Esconde todas as visões
+      document.getElementById("view-worldometer").classList.remove("active");
+      document.getElementById("view-brazil").classList.remove("active");
+
+      // Mostra a visão selecionada
+      if (targetName === "worldometer") {
+        document.getElementById("view-worldometer").classList.add("active");
+      } else if (targetName === "brazil") {
+        document.getElementById("view-brazil").classList.add("active");
+      }
+    });
+  </script>
+
+</body>
+</html>

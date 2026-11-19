@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>ViewDNS.info - Painel de APIs</title>
+  <style>
+    :root {
+      --primary: #0066cc;
+      --bg: #f4f6f9;
+      --card-bg: #ffffff;
+      --text: #333333;
+      --border: #dddddd;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    h2 { margin-top: 0; color: var(--primary); text-align: center; }
+    .config-box {
+      background: #eef2f7;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .config-box input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    select, input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+    button:hover { background-color: #004999; }
+    #loading {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+      display: none;
+      margin: 15px 0;
+    }
+    .result-area {
+      margin-top: 20px;
+      background: #1e1e1e;
+      color: #dcdcdc;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      max-height: 400px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: white;
+      color: #333;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px;
+      text-align: left;
+    }
+    th { background-color: var(--primary); color: white; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Painel ViewDNS.info APIs</h2>
+
+    <!-- Chave da API Global -->
+    <div class="config-box">
+      <label for="apiKey">API Key:</label>
+      <input type="text" id="apiKey" placeholder="Insira sua chave do ViewDNS aqui">
+    </div>
+
+    <!-- Seletor de Ferramenta -->
+    <div class="form-group">
+      <label for="toolSelect">Selecione a Ferramenta (API):</label>
+      <select id="toolSelect" onchange="atualizarFormulario()">
+        <option value="reversewhois">Reverse WHOIS (E-mail ou Nome)</option>
+        <option value="whois">WHOIS Lookup (Domínio/IP)</option>
+        <option value="dns">DNS Record Lookup (Registros DNS)</option>
+        <option value="iphistory">IP History (Histórico de IPs)</option>
+        <option value="reverseip">Reverse IP Lookup (Sites no Servidor)</option>
+        <option value="iplocation">IP Location (Geolocalização)</option>
+        <option value="ping">Global Ping Test (Ping)</option>
+        <option value="portscan">Port Scanner (Portas Abertas)</option>
+        <option value="spamdblookup">Spam Database Lookup (Blacklists)</option>
+        <option value="abusecontact">Abuse Contact Lookup (Contato de Abuso)</option>
+      </select>
+    </div>
+
+    <!-- Campo de Entrada Dinâmico -->
+    <div class="form-group">
+      <label id="inputLabel" for="queryInput">Alvo (Domínio, IP ou E-mail):</label>
+      <input type="text" id="queryInput" placeholder="ex: domain@example.com ou site.com">
+    </div>
+
+    <button onclick="executarAPI()">Executar Consulta</button>
+
+    <div id="loading">Consultando API do ViewDNS...</div>
+    
+    <div id="resultadoContainer"></div>
+  </div>
+
+  <script>
+    // Mapeamento das rotas da API do ViewDNS.info
+    const apiEndpoints = {
+      reversewhois: { endpoint: 'reversewhois', param: 'q', label: 'E-mail ou Termo de Busca:' },
+      whois: { endpoint: 'whois', param: 'domain', label: 'Domínio ou IP:' },
+      dns: { endpoint: 'dns', param: 'domain', label: 'Domínio:' },
+      iphistory: { endpoint: 'iphistory', param: 'domain', label: 'Domínio:' },
+      reverseip: { endpoint: 'reverseip', param: 'host', label: 'Endereço IP ou Domínio:' },
+      iplocation: { endpoint: 'iplocation', param: 'ip', label: 'Endereço IP (IPv4):' },
+      ping: { endpoint: 'ping', param: 'host', label: 'Host ou Domínio:' },
+      portscan: { endpoint: 'portscan', param: 'host', label: 'Host ou Domínio:' },
+      spamdblookup: { endpoint: 'spamdblookup', param: 'ip', label: 'Endereço IP:' },
+      abusecontact: { endpoint: 'abusecontact', param: 'domain', label: 'Domínio:' }
+    };
+
+    function atualizarFormulario() {
+      const selectedTool = document.getElementById('toolSelect').value;
+      const config = apiEndpoints[selectedTool];
+      document.getElementById('inputLabel').textContent = config.label;
+    }
+
+    async function executarAPI() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const toolKey = document.getElementById('toolSelect').value;
+      const queryValue = document.getElementById('queryInput').value.trim();
+      const container = document.getElementById('resultadoContainer');
+      const loading = document.getElementById('loading');
+
+      if (!apiKey) {
+        alert('Por favor, insira sua chave de API do ViewDNS.');
+        return;
+      }
+      if (!queryValue) {
+        alert('Por favor, preencha o campo de consulta.');
+        return;
+      }
+
+      container.innerHTML = '';
+      loading.style.display = 'block';
+
+      const config = apiEndpoints[toolKey];
+      const url = `https://api.viewdns.info/${config.endpoint}/?${config.param}=${encodeURIComponent(queryValue)}&apikey=${apiKey}&output=json`;
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        loading.style.display = 'none';
+
+        // Renderiza tabela se houver matches (ex: reversewhois, dns, etc) ou JSON formatado
+        if (data.response && data.response.matches && Array.isArray(data.response.matches)) {
+          let html = `<table><thead><tr>`;
+          const keys = Object.keys(data.response.matches[0]);
+          keys.forEach(k => html += `<th>${k}</th>`);
+          html += `</tr></thead><tbody>`;
+
+          data.response.matches.forEach(item => {
+            html += `<tr>`;
+            keys.forEach(k => html += `<td>${item[k] || ''}</td>`);
+            html += `</tr>`;
+          });
+          html += `</tbody></table>`;
+          container.innerHTML = html;
+        } else {
+          // Exibe o JSON estruturado puro para as demais respostas
+          container.innerHTML = `<div class="result-area">${JSON.stringify(data, null, 2)}</div>`;
+        }
+
+      } catch (error) {
+        loading.style.display = 'none';
+        container.innerHTML = `<div class="result-area" style="color: #ff6b6b;">Erro de conexão ou resposta inválida: ${error.message}</div>`;
+      }
+    }
+  </script>
+
+</body>
+</html>
