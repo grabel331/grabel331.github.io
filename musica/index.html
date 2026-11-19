@@ -32,7 +32,7 @@
       min-height: 100vh;
       padding: 20px;
       display: grid;
-      grid-template-columns: minmax(320px, 400px) minmax(300px, 1fr);
+      grid-template-columns: minmax(300px, 1fr) minmax(320px, 400px);
       gap: 24px;
       align-items: center;
     }
@@ -214,6 +214,10 @@
 </head>
 <body>
   <main class="player-stage">
+    <section class="tracks-panel" aria-label="Lista de faixas">
+      <ul id="playlist" class="playlist"></ul>
+    </section>
+
     <section class="player" aria-label="Controles do player">
       <div class="now-playing">
         <img id="cover" class="cover" alt="Capa da faixa" />
@@ -271,10 +275,6 @@
       </div>
 
       <div id="status" class="status"></div>
-    </section>
-
-    <section class="tracks-panel" aria-label="Lista de faixas">
-      <ul id="playlist" class="playlist"></ul>
     </section>
   </main>
 
