@@ -59,7 +59,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-		
+
         .btn-home {
             background: rgba(56, 189, 248, 0.1);
             border: 1px solid rgba(56, 189, 248, 0.3);
@@ -95,20 +95,42 @@
         }
 
         .city-name {
-            width: 105px;
+            width: 120px;
             font-size: 0.7rem;
             font-weight: 700;
             color: #f8fafc;
             white-space: nowrap;
             display: flex;
             align-items: center;
-            gap: 3px;
+            justify-content: space-between;
+            padding-right: 6px;
+            gap: 4px;
             flex-shrink: 0;
+        }
+
+        .city-label {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .city-name i {
             color: #38bdf8;
             font-size: 0.65rem;
+        }
+
+        .current-temp {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            padding: 1px 5px;
+            border-radius: 4px;
+            line-height: 1.1;
+            flex-shrink: 0;
         }
 
         .days-grid {
@@ -199,8 +221,13 @@
         /* Ajustes finos para celulares muito pequenos */
         @media (max-width: 480px) {
             .city-name {
-                width: 85px;
+                width: 98px;
                 font-size: 0.62rem;
+                padding-right: 4px;
+            }
+            .current-temp {
+                font-size: 0.62rem;
+                padding: 1px 4px;
             }
             .day-cell .day-lbl {
                 font-size: 0.5rem;
@@ -230,45 +257,54 @@
                 🏠 Página inicial
             </a>
             <div class="header-title">
-                <i class="fa-solid fa-location-dot"></i> Previsão Litoral Norte SP —> prox. 7 Dias 
+                <i class="fa-solid fa-location-dot"></i> Previsão Litoral Norte SP —> prox. 7 Dias
             </div>
         </div>
 
         <div class="cities-wrapper">
             <div class="city-row">
-                <div class="city-name"><i class="fa-solid fa-angle-right"></i> São Sebá</div>
+                <div class="city-name">
+                    <span class="city-label"><i class="fa-solid fa-angle-right"></i> São Sebá</span>
+                    <span class="current-temp loading-pulse" id="seba-atual">--°C</span>
+                </div>
                 <div class="days-grid loading-pulse" id="seba-grid"></div>
             </div>
 
             <div class="city-row">
-                <div class="city-name"><i class="fa-solid fa-angle-right"></i> Caraguá</div>
+                <div class="city-name">
+                    <span class="city-label"><i class="fa-solid fa-angle-right"></i> Caraguá</span>
+                    <span class="current-temp loading-pulse" id="caragua-atual">--°C</span>
+                </div>
                 <div class="days-grid loading-pulse" id="caragua-grid"></div>
             </div>
 
             <div class="city-row">
-                <div class="city-name"><i class="fa-solid fa-angle-right"></i> Ilhabela</div>
+                <div class="city-name">
+                    <span class="city-label"><i class="fa-solid fa-angle-right"></i> Ilhabela</span>
+                    <span class="current-temp loading-pulse" id="ilhabela-atual">--°C</span>
+                </div>
                 <div class="days-grid loading-pulse" id="ilhabela-grid"></div>
             </div>
         </div>
     </header>
 
-    <!-- Windy Embed com zoom 11 e as coordenadas -23.815, -45.387 -->
+    <!-- Windy Embed intocado -->
     <div class="windy-container">
-        <iframe 
-            src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=%C2%B0C&metricWind=km%2Fh&zoom=11&overlay=wind&product=ecmwf&level=surface&lat=-23.815&lon=-45.387&detail=true&detailLat=-23.815&detailLon=-45.387&calendar=now&pressure=true&message=true&marker=true" 
+        <iframe
+            src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=%C2%B0C&metricWind=km%2Fh&zoom=11&overlay=wind&product=ecmwf&level=surface&lat=-23.815&lon=-45.387&detail=true&detailLat=-23.815&detailLon=-45.387&calendar=now&pressure=true&message=true&marker=true"
             allow="geolocation"
             allowfullscreen>
         </iframe>
     </div>
 
     <script>
-        const diasSemana = ['Hoje', 'Amanhã', 'Sáb', 'Dom', 'Seg', 'Ter', 'Qua'];
-
         function obterIconeClima(codigoWMO) {
             if (codigoWMO === 0) return 'fa-sun';
             if (codigoWMO >= 1 && codigoWMO <= 3) return 'fa-cloud-sun';
+            if (codigoWMO >= 45 && codigoWMO <= 48) return 'fa-smog';
             if (codigoWMO >= 51 && codigoWMO <= 67) return 'fa-cloud-rain';
-            if (codigoWMO >= 80 && codigoWMO <= 99) return 'fa-cloud-showers-heavy';
+            if (codigoWMO >= 80 && codigoWMO <= 82) return 'fa-cloud-showers-heavy';
+            if (codigoWMO >= 95 && codigoWMO <= 99) return 'fa-bolt';
             return 'fa-cloud';
         }
 
@@ -276,8 +312,15 @@
             if (index === 0) return 'Hoje';
             if (index === 1) return 'Amanhã';
             const diasAbv = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-            const data = new Date(dataStr + 'T00:00:00');
+            const [ano, mes, dia] = dataStr.split('-').map(Number);
+            const data = new Date(ano, mes - 1, dia);
             return diasAbv[data.getDay()];
+        }
+
+        function renderizarTemperaturaAtual(atualId, tempAtual) {
+            const el = document.getElementById(atualId);
+            el.classList.remove('loading-pulse');
+            el.textContent = `${Math.round(tempAtual)}°C`;
         }
 
         function renderizarGrade(containerId, maxs, mins, icones, datas) {
@@ -300,12 +343,13 @@
             }
         }
 
-        async function buscarPrevisao(lat, lon, containerId) {
+        async function buscarPrevisao(lat, lon, atualId, gridId) {
             try {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=America/Sao_Paulo`;
                 const resposta = await fetch(url);
                 const dados = await resposta.json();
 
+                const tempAtual = dados.current?.temperature_2m ?? dados.daily.temperature_2m_max[0];
                 const maxs = dados.daily.temperature_2m_max;
                 const mins = dados.daily.temperature_2m_min;
                 const codigos = dados.daily.weathercode;
@@ -313,16 +357,17 @@
 
                 const icones = codigos.map(codigo => obterIconeClima(codigo));
 
-                renderizarGrade(containerId, maxs, mins, icones, datas);
+                renderizarTemperaturaAtual(atualId, tempAtual);
+                renderizarGrade(gridId, maxs, mins, icones, datas);
             } catch (erro) {
-                console.error("Erro ao buscar clima para " + containerId, erro);
+                console.error("Erro ao buscar clima para " + gridId, erro);
             }
         }
 
-        // Coordenadas das cidades mantidas
-        buscarPrevisao(-23.760, -45.410, 'seba-grid');     // São Sebastião
-        buscarPrevisao(-23.619, -45.411, 'caragua-grid');    // Caraguatatuba
-        buscarPrevisao(-23.778, -45.358, 'ilhabela-grid');   // Ilhabela
+        // São Sebastião, Caraguatatuba e Ilhabela
+        buscarPrevisao(-23.760, -45.410, 'seba-atual', 'seba-grid');
+        buscarPrevisao(-23.620, -45.413, 'caragua-atual', 'caragua-grid');
+        buscarPrevisao(-23.778, -45.358, 'ilhabela-atual', 'ilhabela-grid');
     </script>
 </body>
 </html>
