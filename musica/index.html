@@ -527,15 +527,15 @@
             type="text"
             placeholder="noLogin playlist salva em localStorage..   "
             aria-label="Nome da nova playlist      "
-			 
           />
-		   
-		  
           <button id="create-playlist-btn" class="mini-btn" type="button">+ Playlist</button>
           <select id="active-playlist-select" class="playlist-select" aria-label="Selecionar playlist para gerenciar">
             <option value="">Sem playlist ativa</option>
           </select>
           <button id="delete-playlist-btn" class="mini-btn" type="button" title="Excluir playlist selecionada">Excluir</button>
+          <button id="export-playlists-btn" class="mini-btn" type="button" title="Exportar playlists e favoritos em JSON">Exportar</button>
+          <button id="import-playlists-btn" class="mini-btn" type="button" title="Importar playlists e favoritos de um JSON">Importar</button>
+          <input id="import-playlists-file" type="file" accept="application/json,.json" hidden />
         </div>
       </div>
 
@@ -634,6 +634,9 @@
     const createPlaylistBtn = document.getElementById("create-playlist-btn");
     const activePlaylistSelect = document.getElementById("active-playlist-select");
     const deletePlaylistBtn = document.getElementById("delete-playlist-btn");
+    const exportPlaylistsBtn = document.getElementById("export-playlists-btn");
+    const importPlaylistsBtn = document.getElementById("import-playlists-btn");
+    const importPlaylistsFile = document.getElementById("import-playlists-file");
 
     const playBtn = document.getElementById("play-btn");
     const playIcon = document.getElementById("play-icon");
@@ -690,6 +693,73 @@
       try {
         localStorage.setItem(STORAGE_PLAYLISTS_KEY, JSON.stringify(playlists));
       } catch (_) {}
+    }
+
+    function exportPlaylistsData() {
+      const payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        playlists,
+        favorites: [...favorites]
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "playlists-player.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setStatus("Playlists e favoritos exportados para playlists-player.json.");
+    }
+
+    function importPlaylistsFromObject(data) {
+      if (!data || typeof data !== "object") {
+        throw new Error("Formato JSON inválido.");
+      }
+
+      const importedPlaylists =
+        data.playlists && typeof data.playlists === "object" && !Array.isArray(data.playlists)
+          ? data.playlists
+          : !Array.isArray(data)
+            ? data
+            : null;
+
+      if (!importedPlaylists) {
+        throw new Error("Nenhuma playlist válida encontrada no arquivo.");
+      }
+
+      let importedCount = 0;
+      for (const [name, tracks] of Object.entries(importedPlaylists)) {
+        const cleanName = String(name || "").trim();
+        if (!cleanName || !Array.isArray(tracks)) continue;
+        const cleanTracks = tracks.map((t) => String(t)).filter(Boolean);
+        const existing = Array.isArray(playlists[cleanName]) ? playlists[cleanName] : [];
+        playlists[cleanName] = [...new Set([...existing, ...cleanTracks])];
+        importedCount++;
+      }
+
+      let favCount = 0;
+      if (Array.isArray(data.favorites)) {
+        data.favorites.forEach((f) => {
+          const item = String(f || "").trim();
+          if (item && !favorites.has(item)) {
+            favorites.add(item);
+            favCount++;
+          }
+        });
+      }
+
+      if (importedCount === 0 && favCount === 0) {
+        throw new Error("O arquivo não contém playlists ou favoritos para importar.");
+      }
+
+      savePlaylists();
+      saveFavorites();
+      refreshPlaylistUIControls();
+      applyFilters(currentTrack()?.file || null, false);
+      setStatus(`Importado: ${importedCount} playlist(s) e ${favCount} favorito(s).`);
     }
 
     function setPlayIcon(isPlaying) {
@@ -1048,6 +1118,25 @@
       }
       refreshPlaylistUIControls();
       applyFilters(currentTrack()?.file || null, false);
+    });
+
+    exportPlaylistsBtn.addEventListener("click", exportPlaylistsData);
+
+    importPlaylistsBtn.addEventListener("click", () => {
+      importPlaylistsFile.value = "";
+      importPlaylistsFile.click();
+    });
+
+    importPlaylistsFile.addEventListener("change", async () => {
+      const file = importPlaylistsFile.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        importPlaylistsFromObject(parsed);
+      } catch (err) {
+        setStatus(err?.message || "Não foi possível importar o arquivo JSON.");
+      }
     });
 
     playBtn.addEventListener("click", togglePlay);
