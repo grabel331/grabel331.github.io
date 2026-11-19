@@ -3,22 +3,56 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Me Localize - Teste</title>
+  <title>Me Localize - Sessão Temporária</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
-    body { background: #0f172a; color: #e2e8f0; padding: 16px; display: flex; flex-direction: column; gap: 12px; height: 100vh; }
-    .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    button { background: #38bdf8; color: #0f172a; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100dvh;
+    }
+    .bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #38bdf8;
+      color: #0f172a;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      font-weight: 500;
+    }
     button:hover { opacity: 0.9; }
-    #status { font-size: 0.9rem; color: #94a3b8; }
-    #map { flex: 1; width: 100%; border-radius: 10px; border: 1px solid #334155; background: #1e293b; }
+    #status { font-size: 0.88rem; color: #94a3b8; }
+    #map {
+      flex: 1;
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      background: #1e293b;
+    }
   </style>
 </head>
 <body>
   <div class="bar">
     <button id="btn-locate" type="button">Me localize</button>
-    <span id="status">Clique para pedir permissão e centralizar no mapa.</span>
+    <button id="btn-clear" class="secondary" type="button">Limpar ponto</button>
+    <span id="status">Memória limpa. Nada é salvo ao fechar.</span>
   </div>
   <div id="map"></div>
 
@@ -26,13 +60,30 @@
   <script>
     const statusEl = document.getElementById("status");
     const btnLocate = document.getElementById("btn-locate");
+    const btnClear = document.getElementById("btn-clear");
 
-    const map = L.map("map").setView([-23.76, -45.41], 12);
+    const map = L.map("map").setView([0, 0], 2);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "&copy; OpenStreetMap"
     }).addTo(map);
 
     let marker = null;
+
+    function resetState() {
+      if (marker) {
+        map.removeLayer(marker);
+        marker = null;
+      }
+      map.setView([0, 0], 2);
+    }
+
+    btnClear.addEventListener("click", () => {
+      resetState();
+      statusEl.textContent = "Ponto removido da tela.";
+    });
+
+    // Garante limpeza de variáveis/camadas em memória ao sair da página
+    window.addEventListener("pagehide", resetState);
 
     btnLocate.addEventListener("click", () => {
       if (!navigator.geolocation) {
@@ -40,7 +91,7 @@
         return;
       }
 
-      statusEl.textContent = "Aguardando permissão de localização...";
+      statusEl.textContent = "Solicitando localização apenas para este clique...";
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -53,8 +104,13 @@
             marker = L.marker([latitude, longitude]).addTo(map);
           }
 
-          marker.bindPopup(`Você está aqui<br>Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}<br>Precisão: ~${Math.round(accuracy)}m`).openPopup();
-          statusEl.textContent = `Localizado (${latitude.toFixed(5)}, ${longitude.toFixed(5)}) — ±${Math.round(accuracy)}m`;
+          marker
+            .bindPopup(
+              `Sessão atual (não salva)<br>Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}<br>Precisão: ~${Math.round(accuracy)}m`
+            )
+            .openPopup();
+
+          statusEl.textContent = `Localizado na sessão atual (${latitude.toFixed(5)}, ${longitude.toFixed(5)}) — ±${Math.round(accuracy)}m`;
         },
         (err) => {
           if (err.code === err.PERMISSION_DENIED) {
@@ -63,7 +119,11 @@
             statusEl.textContent = `Erro ao obter localização: ${err.message}`;
           }
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0 // força leitura nova em vez de reutilizar cache de posição do navegador
+        }
       );
     });
   </script>
