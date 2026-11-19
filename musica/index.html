@@ -13,6 +13,7 @@
       --muted: #93a3b8;
       --accent: #38bdf8;
       --border: #283546;
+      --topbar-h: 48px;
     }
 
     * { box-sizing: border-box; }
@@ -26,12 +27,56 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      height: var(--topbar-h);
+      width: 100%;
+      padding: 0 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .home-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .home-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .topbar-brand {
+      font-size: 0.8rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .player-stage {
       width: 100%;
-      height: 100vh;
-      padding: 20px;
+      height: calc(100vh - var(--topbar-h));
+      padding: 16px 20px 20px;
       display: grid;
       grid-template-columns: minmax(320px, 1fr) minmax(320px, 400px);
       gap: 24px;
@@ -165,7 +210,7 @@
     .tracks-panel {
       width: 100%;
       height: 100%;
-      max-height: calc(100vh - 40px);
+      max-height: calc(100vh - var(--topbar-h) - 36px);
       overflow-y: auto;
       overscroll-behavior: contain;
       display: flex;
@@ -367,17 +412,30 @@
     }
 
     @media (max-width: 820px) {
+      :root {
+        --topbar-h: 44px;
+      }
+
       html, body {
         height: 100dvh;
         min-height: 100dvh;
         overflow: hidden;
       }
 
+      .topbar {
+        padding: 0 10px;
+      }
+
+      .home-btn {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+      }
+
       .player-stage {
-        height: 100dvh;
-        min-height: 100dvh;
-        padding: 10px;
-        gap: 10px;
+        height: calc(100dvh - var(--topbar-h));
+        min-height: 0;
+        padding: 8px 10px 10px;
+        gap: 8px;
         grid-template-columns: 1fr;
         grid-template-rows: auto minmax(0, 1fr);
         align-items: stretch;
@@ -501,6 +559,16 @@
   </style>
 </head>
 <body>
+  <header class="topbar">
+    <a class="home-btn" href="https://gabrielpereira.net.eu.org">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/>
+      </svg>
+      Página inicial
+    </a>
+    <span class="topbar-brand">// teste player</span>
+  </header>
+
   <main class="player-stage">
     <section class="tracks-panel" aria-label="Lista de faixas">
       <div class="library-tools">
