@@ -187,29 +187,15 @@
   </main>
 
   <script id="playlist-data" type="application/json">
-  [
-    {
-      "id": "faixa-01",
-      "title": "Faixa 01",
-      "artist": "Artista",
-      "album": "Música",
-      "file": "faixa-01.mp3",
-      "cover": ""
-    },
-    {
-      "id": "faixa-02",
-      "title": "Faixa 02",
-      "artist": "Artista",
-      "album": "Música",
-      "file": "faixa-02.mp3",
-      "cover": ""
-    }
-  ]
+  []
   </script>
 
   <script>
+    const GITHUB_OWNER = "grabel331";
+    const GITHUB_REPO = "grabel331.github.io";
+    const GITHUB_BRANCH = "main";
+    const REPO_AUDIO_PATH = "musica/musica";
     const MUSIC_FOLDER = "./musica/";
-    const EXTERNAL_PLAYLIST_URL = "./musica/playlist.json";
 
     const audio = document.getElementById("audio");
     const coverEl = document.getElementById("cover");
@@ -248,12 +234,15 @@
       statusEl.textContent = msg || "";
     }
 
+    function formatTitleFromFilename(filename) {
+      return filename
+        .replace(/\.(mp3|ogg|wav|m4a|flac)$/i, "")
+        .replace(/[-_]+/g, " ")
+        .trim();
+    }
+
     function resolveAudioSrc(track) {
-      if (track.src) {
-        return track.src.startsWith("http") || track.src.startsWith("./")
-          ? track.src
-          : `${MUSIC_FOLDER}${track.src}`;
-      }
+      if (track.src) return track.src;
       return `${MUSIC_FOLDER}${encodeURIComponent(track.file || "")}`;
     }
 
@@ -447,20 +436,40 @@
       }
     });
 
-    async function loadPlaylistTracks() {
-      try {
-        const res = await fetch(`${EXTERNAL_PLAYLIST_URL}?v=${Date.now()}`, { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length) return data;
-        }
-      } catch (_) {}
-      return JSON.parse(document.getElementById("playlist-data").textContent);
+    async function fetchTracksFromGitHub() {
+      const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${REPO_AUDIO_PATH}?ref=${GITHUB_BRANCH}`;
+      const res = await fetch(apiUrl, { cache: "no-store" });
+      if (!res.ok) throw new Error("GitHub API indisponível");
+      const items = await res.json();
+      if (!Array.isArray(items)) throw new Error("Resposta inválida");
+
+      return items
+        .filter((item) => item.type === "file" && /\.(mp3|ogg|wav|m4a|flac)$/i.test(item.name))
+        .map((item, i) => ({
+          id: `gh-${i}-${item.name}`,
+          title: formatTitleFromFilename(item.name),
+          artist: "Música",
+          album: "",
+          file: item.name,
+          cover: ""
+        }));
     }
 
     async function init() {
       audio.volume = Number(volumeEl.value);
-      tracks = await loadPlaylistTracks();
+      try {
+        tracks = await fetchTracksFromGitHub();
+      } catch (_) {
+        const fallback = JSON.parse(document.getElementById("playlist-data").textContent || "[]");
+        tracks = Array.isArray(fallback) ? fallback : [];
+      }
+
+      if (!tracks.length) {
+        titleEl.textContent = "Nenhuma faixa encontrada";
+        setStatus("Adicione arquivos .mp3 em /musica/musica/ no repositório.");
+        return;
+      }
+
       buildQueue();
       loadTrack(false);
     }
