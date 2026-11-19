@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Player</title>
+  <style>
+    :root {
+      --bg: #0f141b;
+      --panel: #171f2a;
+      --panel-2: #1f2a38;
+      --text: #e8eef5;
+      --muted: #93a3b8;
+      --accent: #38bdf8;
+      --border: #283546;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .player {
+      width: 100%;
+      max-width: 480px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
+    }
+
+    .now-playing {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .cover {
+      width: 72px;
+      height: 72px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .title {
+      margin: 0 0 4px;
+      font-size: 1.1rem;
+      line-height: 1.25;
+    }
+
+    .artist {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .progress-area {
+      display: grid;
+      grid-template-columns: 42px 1fr 42px;
+      gap: 8px;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    button {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+
+    button:hover,
+    button.active-mode {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .volume-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .playlist {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .playlist li {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .playlist li:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .playlist li.active {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      min-height: 1.1em;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <main class="player">
+    <div class="now-playing">
+      <img id="cover" class="cover" alt="Capa da faixa" />
+      <div>
+        <h1 id="title" class="title">Carregando...</h1>
+        <p id="artist" class="artist"></p>
+      </div>
+    </div>
+
+    <audio id="audio" preload="metadata"></audio>
+
+    <div class="progress-area">
+      <span id="current-time">0:00</span>
+      <input id="seek" type="range" min="0" max="100" value="0" step="0.1" />
+      <span id="duration">0:00</span>
+    </div>
+
+    <div class="controls">
+      <button id="shuffle-btn" type="button">Shuffle: Off</button>
+      <button id="prev-btn" type="button">Anterior</button>
+      <button id="play-btn" type="button">Play</button>
+      <button id="next-btn" type="button">Próxima</button>
+      <button id="repeat-btn" type="button">Repeat: Off</button>
+    </div>
+
+    <div class="volume-area">
+      <label for="volume">Volume</label>
+      <input id="volume" type="range" min="0" max="1" step="0.01" value="0.8" />
+    </div>
+
+    <ul id="playlist" class="playlist"></ul>
+    <div id="status" class="status"></div>
+  </main>
+
+  <script id="playlist-data" type="application/json">
+  [
+    {
+      "id": "faixa-01",
+      "title": "Faixa 01",
+      "artist": "Artista",
+      "album": "Música",
+      "file": "faixa-01.mp3",
+      "cover": ""
+    },
+    {
+      "id": "faixa-02",
+      "title": "Faixa 02",
+      "artist": "Artista",
+      "album": "Música",
+      "file": "faixa-02.mp3",
+      "cover": ""
+    }
+  ]
+  </script>
+
+  <script>
+    const MUSIC_FOLDER = "./musica/";
+    const EXTERNAL_PLAYLIST_URL = "./musica/playlist.json";
+
+    const audio = document.getElementById("audio");
+    const coverEl = document.getElementById("cover");
+    const titleEl = document.getElementById("title");
+    const artistEl = document.getElementById("artist");
+    const currentTimeEl = document.getElementById("current-time");
+    const durationEl = document.getElementById("duration");
+    const seekEl = document.getElementById("seek");
+    const volumeEl = document.getElementById("volume");
+    const playlistEl = document.getElementById("playlist");
+    const statusEl = document.getElementById("status");
+
+    const playBtn = document.getElementById("play-btn");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    const shuffleBtn = document.getElementById("shuffle-btn");
+    const repeatBtn = document.getElementById("repeat-btn");
+
+    const placeholderCover =
+      "data:image/svg+xml;utf8," +
+      encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+          <rect width="120" height="120" fill="#1f2a38"/>
+          <circle cx="60" cy="60" r="28" fill="none" stroke="#38bdf8" stroke-width="4"/>
+          <circle cx="60" cy="60" r="6" fill="#38bdf8"/>
+        </svg>`
+      );
+
+    let tracks = [];
+    let queue = [];
+    let currentIndex = 0;
+    let isShuffle = false;
+    let repeatMode = "none";
+
+    function setStatus(msg) {
+      statusEl.textContent = msg || "";
+    }
+
+    function resolveAudioSrc(track) {
+      if (track.src) {
+        return track.src.startsWith("http") || track.src.startsWith("./")
+          ? track.src
+          : `${MUSIC_FOLDER}${track.src}`;
+      }
+      return `${MUSIC_FOLDER}${encodeURIComponent(track.file || "")}`;
+    }
+
+    function formatTime(sec) {
+      if (!Number.isFinite(sec) || sec < 0) return "0:00";
+      const mins = Math.floor(sec / 60);
+      const secs = Math.floor(sec % 60);
+      return `${mins}:${secs.toString().padStart(2, "0")}`;
+    }
+
+    function buildQueue(keepId = null) {
+      const indices = tracks.map((_, i) => i);
+      if (isShuffle) {
+        for (let i = indices.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+      }
+      queue = indices;
+      if (keepId) {
+        const pos = queue.findIndex((idx) => tracks[idx].id === keepId);
+        currentIndex = pos >= 0 ? pos : 0;
+      } else {
+        currentIndex = 0;
+      }
+    }
+
+    function currentTrack() {
+      return tracks[queue[currentIndex]];
+    }
+
+    function updateMediaSession(track) {
+      if (!("mediaSession" in navigator) || !track) return;
+      const artUrl = track.cover ? new URL(track.cover, window.location.href).href : placeholderCover;
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.title,
+        artist: track.artist,
+        album: track.album || "",
+        artwork: [{ src: artUrl, sizes: "120x120", type: "image/svg+xml" }]
+      });
+      navigator.mediaSession.setActionHandler("play", () => audio.play().catch(() => {}));
+      navigator.mediaSession.setActionHandler("pause", () => audio.pause());
+      navigator.mediaSession.setActionHandler("previoustrack", () => playPrev());
+      navigator.mediaSession.setActionHandler("nexttrack", () => playNext(false));
+    }
+
+    function renderPlaylist() {
+      const active = currentTrack();
+      playlistEl.innerHTML = "";
+      tracks.forEach((track, idx) => {
+        const li = document.createElement("li");
+        const titleSpan = document.createElement("span");
+        titleSpan.textContent = track.title;
+
+        const artistSmall = document.createElement("small");
+        artistSmall.style.color = "var(--muted)";
+        artistSmall.textContent = track.artist;
+
+        li.append(titleSpan, artistSmall);
+        if (active && track.id === active.id) li.classList.add("active");
+
+        li.addEventListener("click", () => {
+          const qPos = queue.indexOf(idx);
+          if (qPos >= 0) {
+            currentIndex = qPos;
+            loadTrack(true);
+          }
+        });
+        playlistEl.appendChild(li);
+      });
+    }
+
+    function loadTrack(autoPlay = false) {
+      const track = currentTrack();
+      if (!track) return;
+
+      setStatus("");
+      audio.src = resolveAudioSrc(track);
+      titleEl.textContent = track.title;
+      artistEl.textContent = track.artist;
+      coverEl.src = track.cover || placeholderCover;
+      seekEl.value = 0;
+      currentTimeEl.textContent = "0:00";
+      durationEl.textContent = "0:00";
+
+      updateMediaSession(track);
+      renderPlaylist();
+
+      if (autoPlay) {
+        audio.play().catch(() => setStatus("Clique em Play para iniciar a reprodução."));
+      }
+    }
+
+    function togglePlay() {
+      if (!audio.src) return;
+      if (audio.paused) {
+        audio.play().catch(() => setStatus("Erro ao iniciar o áudio."));
+      } else {
+        audio.pause();
+      }
+    }
+
+    function playNext(fromEnded = false) {
+      if (!queue.length) return;
+      if (fromEnded && repeatMode === "one") {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+        return;
+      }
+      if (currentIndex + 1 < queue.length) {
+        currentIndex++;
+        loadTrack(true);
+      } else if (repeatMode === "all" || !fromEnded) {
+        currentIndex = 0;
+        loadTrack(true);
+      }
+    }
+
+    function playPrev() {
+      if (!queue.length) return;
+      if (audio.currentTime > 3) {
+        audio.currentTime = 0;
+        return;
+      }
+      currentIndex = (currentIndex - 1 + queue.length) % queue.length;
+      loadTrack(true);
+    }
+
+    playBtn.addEventListener("click", togglePlay);
+    nextBtn.addEventListener("click", () => playNext(false));
+    prevBtn.addEventListener("click", playPrev);
+
+    shuffleBtn.addEventListener("click", () => {
+      const activeId = currentTrack()?.id;
+      isShuffle = !isShuffle;
+      shuffleBtn.textContent = `Shuffle: ${isShuffle ? "On" : "Off"}`;
+      shuffleBtn.classList.toggle("active-mode", isShuffle);
+      buildQueue(activeId);
+      renderPlaylist();
+    });
+
+    repeatBtn.addEventListener("click", () => {
+      const modes = ["none", "all", "one"];
+      repeatMode = modes[(modes.indexOf(repeatMode) + 1) % modes.length];
+      repeatBtn.textContent = `Repeat: ${repeatMode}`;
+      repeatBtn.classList.toggle("active-mode", repeatMode !== "none");
+    });
+
+    volumeEl.addEventListener("input", () => {
+      audio.volume = Number(volumeEl.value);
+    });
+
+    seekEl.addEventListener("input", () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        audio.currentTime = (Number(seekEl.value) / 100) * audio.duration;
+      }
+    });
+
+    audio.addEventListener("loadedmetadata", () => {
+      durationEl.textContent = formatTime(audio.duration);
+    });
+
+    audio.addEventListener("timeupdate", () => {
+      currentTimeEl.textContent = formatTime(audio.currentTime);
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        seekEl.value = ((audio.currentTime / audio.duration) * 100).toFixed(2);
+      }
+    });
+
+    audio.addEventListener("play", () => {
+      playBtn.textContent = "Pause";
+      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+    });
+
+    audio.addEventListener("pause", () => {
+      playBtn.textContent = "Play";
+      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+    });
+
+    audio.addEventListener("ended", () => playNext(true));
+
+    audio.addEventListener("error", () => {
+      setStatus(`Não foi possível carregar: ${audio.getAttribute("src")}`);
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        togglePlay();
+      }
+    });
+
+    async function loadPlaylistTracks() {
+      try {
+        const res = await fetch(`${EXTERNAL_PLAYLIST_URL}?v=${Date.now()}`, { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length) return data;
+        }
+      } catch (_) {}
+      return JSON.parse(document.getElementById("playlist-data").textContent);
+    }
+
+    async function init() {
+      audio.volume = Number(volumeEl.value);
+      tracks = await loadPlaylistTracks();
+      buildQueue();
+      loadTrack(false);
+    }
+
+    init();
+  </script>
+</body>
+</html>
