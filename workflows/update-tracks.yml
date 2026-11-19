@@ -1,0 +1,49 @@
+name: Atualizar tracks.json
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "musica/musica/**"
+
+permissions:
+  contents: write
+
+jobs:
+  build-tracks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Gerar musica/tracks.json
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = require("path");
+
+            const audioDir = "musica/musica";
+            const outFile = "musica/tracks.json";
+            const exts = /\.(mp3|ogg|wav|m4a|flac)$/i;
+
+            const files = fs.existsSync(audioDir)
+              ? fs.readdirSync(audioDir, { withFileTypes: true })
+                  .filter((d) => d.isFile() && exts.test(d.name))
+                  .map((d) => d.name)
+                  .sort((a, b) => a.localeCompare(b, "pt-BR"))
+              : [];
+
+            const tracks = files.map((file) => ({ file }));
+            fs.writeFileSync(outFile, JSON.stringify(tracks, null, 2) + "\n", "utf8");
+          '
+
+      - name: Commit automático se houver mudança
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add musica/tracks.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(musica): atualiza tracks.json automaticamente"
+            git push
+          fi
