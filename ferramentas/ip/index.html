@@ -31,6 +31,12 @@
       font-weight: 700;
       cursor: pointer;
     }
+    button.secondary {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      font-weight: 500;
+    }
     button:hover { opacity: 0.9; }
     #status { font-size: 0.88rem; color: #94a3b8; }
     #map {
@@ -45,6 +51,7 @@
 <body>
   <div class="bar">
     <button id="btn-locate" type="button">Me localize</button>
+    <button id="btn-clear" class="secondary" type="button">Limpar ponto</button>
     <span id="status">Memória limpa. Nada é salvo ao fechar.</span>
   </div>
   <div id="map"></div>
@@ -53,6 +60,7 @@
   <script>
     const statusEl = document.getElementById("status");
     const btnLocate = document.getElementById("btn-locate");
+    const btnClear = document.getElementById("btn-clear");
 
     const map = L.map("map").setView([0, 0], 2);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -68,6 +76,11 @@
       }
       map.setView([0, 0], 2);
     }
+
+    btnClear.addEventListener("click", () => {
+      resetState();
+      statusEl.textContent = "Ponto removido da tela.";
+    });
 
     // Garante limpeza de variáveis/camadas em memória ao sair da página
     window.addEventListener("pagehide", resetState);
@@ -109,7 +122,7 @@
         {
           enableHighAccuracy: true,
           timeout: 10000,
-          maximumAge: 0
+          maximumAge: 0 // força leitura nova em vez de reutilizar cache de posição do navegador
         }
       );
     });
