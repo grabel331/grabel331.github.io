@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Me Localize - Teste</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+    body { background: #0f172a; color: #e2e8f0; padding: 16px; display: flex; flex-direction: column; gap: 12px; height: 100vh; }
+    .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    button { background: #38bdf8; color: #0f172a; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    button:hover { opacity: 0.9; }
+    #status { font-size: 0.9rem; color: #94a3b8; }
+    #map { flex: 1; width: 100%; border-radius: 10px; border: 1px solid #334155; background: #1e293b; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <button id="btn-locate" type="button">Me localize</button>
+    <span id="status">Clique para pedir permissão e centralizar no mapa.</span>
+  </div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const statusEl = document.getElementById("status");
+    const btnLocate = document.getElementById("btn-locate");
+
+    const map = L.map("map").setView([-23.76, -45.41], 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+
+    let marker = null;
+
+    btnLocate.addEventListener("click", () => {
+      if (!navigator.geolocation) {
+        statusEl.textContent = "Geolocalização não suportada neste navegador.";
+        return;
+      }
+
+      statusEl.textContent = "Aguardando permissão de localização...";
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
+          map.setView([latitude, longitude], 15);
+
+          if (marker) {
+            marker.setLatLng([latitude, longitude]);
+          } else {
+            marker = L.marker([latitude, longitude]).addTo(map);
+          }
+
+          marker.bindPopup(`Você está aqui<br>Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}<br>Precisão: ~${Math.round(accuracy)}m`).openPopup();
+          statusEl.textContent = `Localizado (${latitude.toFixed(5)}, ${longitude.toFixed(5)}) — ±${Math.round(accuracy)}m`;
+        },
+        (err) => {
+          if (err.code === err.PERMISSION_DENIED) {
+            statusEl.textContent = "Permissão de localização negada.";
+          } else {
+            statusEl.textContent = `Erro ao obter localização: ${err.message}`;
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+  </script>
+</body>
+</html>
