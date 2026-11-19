@@ -535,6 +535,7 @@
           <button id="delete-playlist-btn" class="mini-btn" type="button" title="Excluir playlist selecionada">Excluir</button>
           <button id="export-playlists-btn" class="mini-btn" type="button" title="Exportar playlists e favoritos em JSON">Exportar</button>
           <button id="import-playlists-btn" class="mini-btn" type="button" title="Importar playlists e favoritos de um JSON">Importar</button>
+          <button id="export-m3u-btn" class="mini-btn" type="button" title="Baixar lista M3U com todas as músicas da raiz para o AIMP">M3U</button>
           <input id="import-playlists-file" type="file" accept="application/json,.json" hidden />
         </div>
       </div>
@@ -636,6 +637,7 @@
     const deletePlaylistBtn = document.getElementById("delete-playlist-btn");
     const exportPlaylistsBtn = document.getElementById("export-playlists-btn");
     const importPlaylistsBtn = document.getElementById("import-playlists-btn");
+    const exportM3uBtn = document.getElementById("export-m3u-btn");
     const importPlaylistsFile = document.getElementById("import-playlists-file");
 
     const playBtn = document.getElementById("play-btn");
@@ -712,6 +714,31 @@
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       setStatus("Playlists e favoritos exportados para playlists-player.json.");
+    }
+
+    function exportAllTracksM3U() {
+      if (!allTracks.length) {
+        setStatus("Nenhuma faixa carregada para gerar o M3U.");
+        return;
+      }
+
+      const lines = ["#EXTM3U"];
+      allTracks.forEach((track) => {
+        const label = `${track.artist || "Música"} - ${track.title || track.file}`;
+        lines.push(`#EXTINF:-1,${label}`);
+        lines.push(resolveAudioSrc(track));
+      });
+
+      const blob = new Blob([lines.join("\n") + "\n"], { type: "audio/x-mpegurl;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "todas-as-musicas.m3u";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setStatus(`Lista M3U gerada com ${allTracks.length} faixa(s) para o AIMP.`);
     }
 
     function importPlaylistsFromObject(data) {
@@ -1121,6 +1148,7 @@
     });
 
     exportPlaylistsBtn.addEventListener("click", exportPlaylistsData);
+    exportM3uBtn.addEventListener("click", exportAllTracksM3U);
 
     importPlaylistsBtn.addEventListener("click", () => {
       importPlaylistsFile.value = "";
