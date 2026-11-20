@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' https://raw.githubusercontent.com blob:; connect-src 'self' https://api.github.com https://raw.githubusercontent.com; object-src 'none'; base-uri 'self';"
+  />
   <title>Player</title>
   <style>
     :root {
@@ -656,6 +660,7 @@
               id="new-playlist-input"
               class="playlist-input"
               type="text"
+              maxlength="80"
               placeholder="noLogin playlist salva em localStorage..   "
               aria-label="Nome da nova playlist      "
             />
@@ -751,6 +756,8 @@
     const STORAGE_PLAYLISTS_KEY = "gp_player_playlists_v1";
     const STORAGE_TRACKS_CACHE_KEY = "gp_player_tracks_cache_v1";
     const TRACKS_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
+    const FORBIDDEN_KEYS = new Set(["__proto__", "prototype", "constructor"]);
+    const MAX_PLAYLIST_NAME_LEN = 80;
 
     const audio = document.getElementById("audio");
     const coverEl = document.getElementById("cover");
@@ -809,18 +816,54 @@
     let sortMode = "default";
     let selectedPlaylistName = "";
     let favorites = new Set();
-    let playlists = {};
+    let playlists = Object.create(null);
+
+    function sanitizePlaylistName(rawName) {
+      if (typeof rawName !== "string") return "";
+      const clean = rawName.trim().slice(0, MAX_PLAYLIST_NAME_LEN);
+      if (!clean || FORBIDDEN_KEYS.has(clean)) return "";
+      return clean;
+    }
+
+    function isSafeMediaUrl(url) {
+      if (typeof url !== "string" || !url.trim()) return false;
+      try {
+        const parsed = new URL(url, window.location.href);
+        return parsed.protocol === "https:" || parsed.protocol === "http:" || parsed.protocol === "blob:";
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function isSafeCoverUrl(url) {
+      if (typeof url !== "string" || !url.trim()) return false;
+      try {
+        const parsed = new URL(url, window.location.href);
+        return parsed.protocol === "https:" || parsed.protocol === "http:";
+      } catch (_) {
+        return false;
+      }
+    }
 
     function loadSavedLibrary() {
       try {
         const favRaw = JSON.parse(localStorage.getItem(STORAGE_FAVS_KEY) || "[]");
-        if (Array.isArray(favRaw)) favorites = new Set(favRaw);
+        if (Array.isArray(favRaw)) {
+          favorites = new Set(favRaw.filter((item) => typeof item === "string" && item.trim()));
+        }
       } catch (_) {}
 
       try {
         const plRaw = JSON.parse(localStorage.getItem(STORAGE_PLAYLISTS_KEY) || "{}");
         if (plRaw && typeof plRaw === "object" && !Array.isArray(plRaw)) {
-          playlists = plRaw;
+          const cleanMap = Object.create(null);
+          for (const [k, v] of Object.entries(plRaw)) {
+            const safeName = sanitizePlaylistName(k);
+            if (safeName && Array.isArray(v)) {
+              cleanMap[safeName] = [...new Set(v.filter((t) => typeof t === "string" && t.trim()))];
+            }
+          }
+          playlists = cleanMap;
         }
       } catch (_) {}
     }
@@ -832,7 +875,9 @@
         const parsed = JSON.parse(raw);
         if (!parsed || !Array.isArray(parsed.tracks) || !parsed.tracks.length) return null;
         const isFresh = typeof parsed.savedAt === "number" && (Date.now() - parsed.savedAt) < TRACKS_CACHE_TTL_MS;
-        if (isFresh || allowExpired) return parsed.tracks;
+        if (isFresh || allowExpired) {
+          return parsed.tracks.filter((t) => t && typeof t === "object" && typeof t.file === "string" && t.file.trim());
+        }
       } catch (_) {}
       return null;
     }
@@ -855,15 +900,23 @@
 
     function savePlaylists() {
       try {
-        localStorage.setItem(STORAGE_PLAYLISTS_KEY, JSON.stringify(playlists));
+        const plain = {};
+        for (const key of Object.keys(playlists)) {
+          if (!FORBIDDEN_KEYS.has(key)) plain[key] = playlists[key];
+        }
+        localStorage.setItem(STORAGE_PLAYLISTS_KEY, JSON.stringify(plain));
       } catch (_) {}
     }
 
     function exportPlaylistsData() {
+      const plainPlaylists = {};
+      for (const key of Object.keys(playlists)) {
+        if (!FORBIDDEN_KEYS.has(key)) plainPlaylists[key] = playlists[key];
+      }
       const payload = {
         version: 1,
         exportedAt: new Date().toISOString(),
-        playlists,
+        playlists: plainPlaylists,
         favorites: [...favorites]
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -921,9 +974,12 @@
 
       let importedCount = 0;
       for (const [name, tracks] of Object.entries(importedPlaylists)) {
-        const cleanName = String(name || "").trim();
+        const cleanName = sanitizePlaylistName(name);
         if (!cleanName || !Array.isArray(tracks)) continue;
-        const cleanTracks = tracks.map((t) => String(t)).filter(Boolean);
+        const cleanTracks = tracks
+          .filter((t) => typeof t === "string")
+          .map((t) => t.trim())
+          .filter(Boolean);
         const existing = Array.isArray(playlists[cleanName]) ? playlists[cleanName] : [];
         playlists[cleanName] = [...new Set([...existing, ...cleanTracks])];
         importedCount++;
@@ -932,7 +988,8 @@
       let favCount = 0;
       if (Array.isArray(data.favorites)) {
         data.favorites.forEach((f) => {
-          const item = String(f || "").trim();
+          if (typeof f !== "string") return;
+          const item = f.trim();
           if (item && !favorites.has(item)) {
             favorites.add(item);
             favCount++;
@@ -979,9 +1036,11 @@
     }
 
     function resolveAudioSrc(track) {
-      if (track.src) return track.src;
+      if (track && typeof track.src === "string" && isSafeMediaUrl(track.src)) {
+        return track.src;
+      }
       const base = MUSIC_FOLDER.endsWith("/") ? MUSIC_FOLDER : `${MUSIC_FOLDER}/`;
-      return `${base}${encodeURIComponent(track.file || "")}`;
+      return `${base}${encodeURIComponent((track && track.file) || "")}`;
     }
 
     function formatTime(sec) {
@@ -1110,7 +1169,9 @@
 
     function updateMediaSession(track) {
       if (!("mediaSession" in navigator) || !track) return;
-      const artUrl = track.cover ? new URL(track.cover, window.location.href).href : placeholderCover;
+      const artUrl = isSafeCoverUrl(track.cover)
+        ? new URL(track.cover, window.location.href).href
+        : placeholderCover;
       navigator.mediaSession.metadata = new MediaMetadata({
         title: track.title,
         artist: track.artist,
@@ -1297,7 +1358,7 @@
       audio.src = resolveAudioSrc(track);
       titleEl.textContent = track.title;
       artistEl.textContent = track.artist;
-      coverEl.src = track.cover || placeholderCover;
+      coverEl.src = isSafeCoverUrl(track.cover) ? track.cover : placeholderCover;
       seekEl.value = 0;
       currentTimeEl.textContent = "0:00";
       durationEl.textContent = "0:00";
@@ -1373,7 +1434,7 @@
     });
 
     createPlaylistBtn.addEventListener("click", () => {
-      const name = (newPlaylistInput.value || "").trim();
+      const name = sanitizePlaylistName(newPlaylistInput.value);
       if (!name) return;
       if (!playlists[name]) {
         playlists[name] = [];
@@ -1386,7 +1447,7 @@
     });
 
     activePlaylistSelect.addEventListener("change", () => {
-      selectedPlaylistName = activePlaylistSelect.value;
+      selectedPlaylistName = sanitizePlaylistName(activePlaylistSelect.value);
       renderPlaylist();
     });
 
@@ -1395,8 +1456,8 @@
         setStatus("Selecione uma playlist para editar.");
         return;
       }
-      const typedName = (newPlaylistInput.value || "").trim();
-      const nextName = typedName || (window.prompt("Novo nome da playlist:", selectedPlaylistName) || "").trim();
+      const typedName = sanitizePlaylistName(newPlaylistInput.value);
+      const nextName = typedName || sanitizePlaylistName(window.prompt("Novo nome da playlist:", selectedPlaylistName) || "");
       if (!nextName || nextName === selectedPlaylistName) return;
 
       const oldName = selectedPlaylistName;
@@ -1541,7 +1602,7 @@
       if (!Array.isArray(items)) throw new Error("Resposta inválida");
 
       const tracks = items
-        .filter((item) => item.type === "file" && /\.(mp3|ogg|wav|m4a|flac)$/i.test(item.name))
+        .filter((item) => item && item.type === "file" && typeof item.name === "string" && /\.(mp3|ogg|wav|m4a|flac)$/i.test(item.name))
         .map((item, i) => ({
           id: `gh-${i}-${item.name}`,
           title: formatTitleFromFilename(item.name),
@@ -1566,7 +1627,6 @@
       const freshCached = readTracksCache(false);
       if (freshCached) {
         allTracks = freshCached;
-        // Atualiza em segundo plano sem travar a abertura
         fetchTracksFromGitHub()
           .then((updated) => {
             if (updated.length && JSON.stringify(updated) !== JSON.stringify(allTracks)) {
