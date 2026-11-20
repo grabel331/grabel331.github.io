@@ -212,7 +212,6 @@
       height: 100%;
       max-height: calc(100vh - var(--topbar-h) - 36px);
       overflow-y: auto;
-      overscroll-behavior: contain;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -257,6 +256,7 @@
 
     .search-input {
       flex: 1;
+      touch-action: manipulation;
     }
 
     .sort-select {
@@ -359,15 +359,12 @@
       font-weight: 600;
     }
 
-    .track-select-area {
+    .track-info-area {
       flex: 1;
       min-width: 0;
-      cursor: pointer;
       display: flex;
-      justify-content: space-between;
       align-items: center;
       gap: 10px;
-      -webkit-tap-highlight-color: transparent;
     }
 
     .track-title {
@@ -381,6 +378,24 @@
       align-items: center;
       gap: 6px;
       flex-shrink: 0;
+    }
+
+    .play-track-btn {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 6px 9px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .play-track-btn:hover,
+    .play-track-btn.is-playing {
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
     .fav-btn {
@@ -562,17 +577,10 @@
         min-height: 0;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
         max-width: none;
         background: var(--panel);
         border: 1px solid var(--border);
         border-radius: 10px;
-      }
-
-      .track-select-area {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 2px;
       }
 
       .track-title {
@@ -580,10 +588,6 @@
         overflow-wrap: anywhere;
         line-height: 1.25;
         font-size: 0.86rem;
-      }
-
-      .track-select-area small {
-        font-size: 0.72rem;
       }
     }
   </style>
@@ -602,6 +606,10 @@
             id="search-input"
             class="search-input"
             type="search"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
             placeholder="Buscar música..."
             aria-label="Buscar música"
           />
@@ -773,6 +781,7 @@
     let currentIndex = 0;
     let isShuffle = false;
     let repeatMode = "none";
+    let activePlayingFile = null;
 
     let searchQuery = "";
     let currentView = "all";
@@ -895,7 +904,7 @@
       savePlaylists();
       saveFavorites();
       refreshPlaylistUIControls();
-      applyFilters(currentTrack()?.file || null, false);
+      applyFilters(activePlayingFile || currentTrack()?.file || null, false);
       setStatus(`Importado: ${importedCount} playlist(s) e ${favCount} favorito(s).`);
     }
 
@@ -1078,7 +1087,7 @@
         favorites.add(filename);
       }
       saveFavorites();
-      applyFilters(currentTrack()?.file || null, false);
+      applyFilters(activePlayingFile || currentTrack()?.file || null, false);
     }
 
     function toggleTrackInSelectedPlaylist(filename) {
@@ -1094,11 +1103,27 @@
         list.push(filename);
       }
       savePlaylists();
-      applyFilters(currentTrack()?.file || null, false);
+      applyFilters(activePlayingFile || currentTrack()?.file || null, false);
+    }
+
+    function playTrackFromList(idx) {
+      const target = visibleTracks[idx];
+      if (!target) return;
+
+      if (activePlayingFile === target.file && audio.getAttribute("src")) {
+        togglePlay();
+        return;
+      }
+
+      const qPos = queue.indexOf(idx);
+      if (qPos >= 0) {
+        currentIndex = qPos;
+        loadTrack(true);
+      }
     }
 
     function renderPlaylist() {
-      const active = currentTrack();
+      const activeFile = activePlayingFile || currentTrack()?.file || null;
       playlistEl.innerHTML = "";
 
       if (!visibleTracks.length) {
@@ -1115,30 +1140,32 @@
 
       visibleTracks.forEach((track, idx) => {
         const li = document.createElement("li");
-        if (active && track.file === active.file) li.classList.add("active");
+        const isCurrent = activeFile && track.file === activeFile;
+        const isThisPlaying = isCurrent && !audio.paused && Boolean(audio.getAttribute("src"));
+        if (isCurrent) li.classList.add("active");
 
-        const selectArea = document.createElement("div");
-        selectArea.className = "track-select-area";
+        const infoArea = document.createElement("div");
+        infoArea.className = "track-info-area";
 
         const titleSpan = document.createElement("span");
         titleSpan.className = "track-title";
         titleSpan.textContent = track.title;
 
-        const artistSmall = document.createElement("small");
-        artistSmall.style.color = "var(--muted)";
-        artistSmall.textContent = track.artist;
-
-        selectArea.append(titleSpan, artistSmall);
-        selectArea.addEventListener("click", () => {
-          const qPos = queue.indexOf(idx);
-          if (qPos >= 0) {
-            currentIndex = qPos;
-            loadTrack(true);
-          }
-        });
+        infoArea.appendChild(titleSpan);
 
         const actions = document.createElement("div");
         actions.className = "track-actions";
+
+        const playTrackBtn = document.createElement("button");
+        playTrackBtn.type = "button";
+        playTrackBtn.className = `play-track-btn${isThisPlaying ? " is-playing" : ""}`;
+        playTrackBtn.title = isThisPlaying ? "Pausar faixa" : "Tocar faixa";
+        playTrackBtn.setAttribute("aria-label", isThisPlaying ? `Pausar ${track.title}` : `Tocar ${track.title}`);
+        playTrackBtn.textContent = isThisPlaying ? "⏸ Pausar" : "▶ Tocar";
+        playTrackBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          playTrackFromList(idx);
+        });
 
         const isFav = favorites.has(track.file);
         const favBtn = document.createElement("button");
@@ -1161,37 +1188,52 @@
             ? `Remover de "${selectedPlaylistName}"`
             : `Adicionar a "${selectedPlaylistName}"`
           : "Selecione uma playlist primeiro";
-        addPlBtn.textContent = inPl ? "✓ Lista" : "+ Lista";
+        addPlBtn.textContent = inPl ? "✓ Playlist" : "+ Playlist";
         addPlBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           toggleTrackInSelectedPlaylist(track.file);
         });
 
-        actions.append(favBtn, addPlBtn);
-        li.append(selectArea, actions);
+        actions.append(playTrackBtn, favBtn, addPlBtn);
+        li.append(infoArea, actions);
         playlistEl.appendChild(li);
       });
     }
 
     function applyFilters(keepFile = null, autoPlayIfChanged = false) {
+      const hasActiveAudio = Boolean(audio.getAttribute("src"));
+      const wasPlaying = hasActiveAudio && !audio.paused;
       const prevSrc = audio.getAttribute("src") || "";
+
       visibleTracks = computeVisibleTracks();
       buildQueue(keepFile);
-      renderPlaylist();
+
+      if (!visibleTracks.length) {
+        renderPlaylist();
+        return;
+      }
 
       const track = currentTrack();
-      if (!track) return;
+      if (!track) {
+        renderPlaylist();
+        return;
+      }
 
       const nextSrc = resolveAudioSrc(track);
-      if (prevSrc !== nextSrc) {
-        loadTrack(autoPlayIfChanged);
+      const isSameTrackAlreadyLoaded = hasActiveAudio && prevSrc === nextSrc && track.file === activePlayingFile;
+
+      renderPlaylist();
+
+      if (!isSameTrackAlreadyLoaded) {
+        const shouldAutoPlay = autoPlayIfChanged || (wasPlaying && !keepFile);
+        loadTrack(shouldAutoPlay);
       }
     }
 
     function setView(viewName) {
       currentView = viewName;
       refreshPlaylistUIControls();
-      applyFilters(currentTrack()?.file || null, false);
+      applyFilters(activePlayingFile || currentTrack()?.file || null, false);
     }
 
     function loadTrack(autoPlay = false) {
@@ -1199,6 +1241,7 @@
       if (!track) return;
 
       setStatus("");
+      activePlayingFile = track.file;
       audio.src = resolveAudioSrc(track);
       titleEl.textContent = track.title;
       artistEl.textContent = track.artist;
@@ -1216,7 +1259,10 @@
     }
 
     function togglePlay() {
-      if (!audio.src) return;
+      if (!audio.getAttribute("src")) {
+        if (currentTrack()) loadTrack(true);
+        return;
+      }
       if (audio.paused) {
         audio.play().catch(() => setStatus("Erro ao iniciar o áudio."));
       } else {
@@ -1234,7 +1280,7 @@
       if (currentIndex + 1 < queue.length) {
         currentIndex++;
         loadTrack(true);
-      } else if (repeatMode === "all" || !fromEnded) {
+      } else {
         currentIndex = 0;
         loadTrack(true);
       }
@@ -1252,18 +1298,18 @@
 
     searchInput.addEventListener("input", () => {
       searchQuery = searchInput.value;
-      applyFilters(currentTrack()?.file || null, false);
+      applyFilters(activePlayingFile || currentTrack()?.file || null, false);
     });
 
     clearSearchBtn.addEventListener("click", () => {
       searchInput.value = "";
       searchQuery = "";
-      applyFilters(currentTrack()?.file || null, false);
+      applyFilters(activePlayingFile || currentTrack()?.file || null, false);
     });
 
     sortSelect.addEventListener("change", () => {
       sortMode = sortSelect.value;
-      applyFilters(currentTrack()?.file || null, false);
+      applyFilters(activePlayingFile || currentTrack()?.file || null, false);
     });
 
     [...viewTabsEl.querySelectorAll('[data-view="all"], [data-view="favorites"]')].forEach((btn) => {
@@ -1314,7 +1360,7 @@
       }
 
       refreshPlaylistUIControls();
-      applyFilters(currentTrack()?.file || null, false);
+      applyFilters(activePlayingFile || currentTrack()?.file || null, false);
       setStatus(`Playlist renomeada para "${nextName}".`);
     });
 
@@ -1328,7 +1374,7 @@
         currentView = "all";
       }
       refreshPlaylistUIControls();
-      applyFilters(currentTrack()?.file || null, false);
+      applyFilters(activePlayingFile || currentTrack()?.file || null, false);
     });
 
     exportPlaylistsBtn.addEventListener("click", exportPlaylistsData);
@@ -1356,7 +1402,7 @@
     prevBtn.addEventListener("click", playPrev);
 
     shuffleBtn.addEventListener("click", () => {
-      const activeFile = currentTrack()?.file || null;
+      const activeFile = activePlayingFile || currentTrack()?.file || null;
       isShuffle = !isShuffle;
       shuffleBtn.classList.toggle("active-mode", isShuffle);
       buildQueue(activeFile);
@@ -1393,11 +1439,13 @@
 
     audio.addEventListener("play", () => {
       setPlayIcon(true);
+      renderPlaylist();
       if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
     });
 
     audio.addEventListener("pause", () => {
       setPlayIcon(false);
+      renderPlaylist();
       if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
     });
 
