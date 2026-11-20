@@ -348,10 +348,17 @@
       align-items: center;
       gap: 10px;
       min-width: 0;
+      border-left: 3px solid transparent;
+      transition: background 0.15s ease, border-color 0.15s ease;
     }
 
     .playlist li:hover {
       background: rgba(255, 255, 255, 0.03);
+    }
+
+    .playlist li.active {
+      background: rgba(56, 189, 248, 0.09);
+      border-left-color: var(--accent);
     }
 
     .playlist li.active .track-title {
@@ -359,12 +366,23 @@
       font-weight: 600;
     }
 
+    .now-badge {
+      font-size: 0.72rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.16);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
     .track-info-area {
       flex: 1;
       min-width: 0;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .track-title {
@@ -731,6 +749,8 @@
 
     const STORAGE_FAVS_KEY = "gp_player_favorites_v1";
     const STORAGE_PLAYLISTS_KEY = "gp_player_playlists_v1";
+    const STORAGE_TRACKS_CACHE_KEY = "gp_player_tracks_cache_v1";
+    const TRACKS_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
 
     const audio = document.getElementById("audio");
     const coverEl = document.getElementById("cover");
@@ -782,6 +802,7 @@
     let isShuffle = false;
     let repeatMode = "none";
     let activePlayingFile = null;
+    let consecutiveErrorSkips = 0;
 
     let searchQuery = "";
     let currentView = "all";
@@ -801,6 +822,28 @@
         if (plRaw && typeof plRaw === "object" && !Array.isArray(plRaw)) {
           playlists = plRaw;
         }
+      } catch (_) {}
+    }
+
+    function readTracksCache(allowExpired = false) {
+      try {
+        const raw = localStorage.getItem(STORAGE_TRACKS_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.tracks) || !parsed.tracks.length) return null;
+        const isFresh = typeof parsed.savedAt === "number" && (Date.now() - parsed.savedAt) < TRACKS_CACHE_TTL_MS;
+        if (isFresh || allowExpired) return parsed.tracks;
+      } catch (_) {}
+      return null;
+    }
+
+    function writeTracksCache(tracks) {
+      try {
+        if (!Array.isArray(tracks) || !tracks.length) return;
+        localStorage.setItem(
+          STORAGE_TRACKS_CACHE_KEY,
+          JSON.stringify({ savedAt: Date.now(), tracks })
+        );
       } catch (_) {}
     }
 
@@ -1110,6 +1153,8 @@
       const target = visibleTracks[idx];
       if (!target) return;
 
+      consecutiveErrorSkips = 0;
+
       if (activePlayingFile === target.file && audio.getAttribute("src")) {
         togglePlay();
         return;
@@ -1152,6 +1197,13 @@
         titleSpan.textContent = track.title;
 
         infoArea.appendChild(titleSpan);
+
+        if (isCurrent) {
+          const badge = document.createElement("span");
+          badge.className = "now-badge";
+          badge.textContent = isThisPlaying ? "● Tocando" : "❚❚ Pausado";
+          infoArea.appendChild(badge);
+        }
 
         const actions = document.createElement("div");
         actions.className = "track-actions";
@@ -1259,6 +1311,7 @@
     }
 
     function togglePlay() {
+      consecutiveErrorSkips = 0;
       if (!audio.getAttribute("src")) {
         if (currentTrack()) loadTrack(true);
         return;
@@ -1270,8 +1323,10 @@
       }
     }
 
-    function playNext(fromEnded = false) {
+    function playNext(fromEnded = false, fromError = false) {
       if (!queue.length) return;
+      if (!fromError) consecutiveErrorSkips = 0;
+
       if (fromEnded && repeatMode === "one") {
         audio.currentTime = 0;
         audio.play().catch(() => {});
@@ -1287,6 +1342,7 @@
     }
 
     function playPrev() {
+      consecutiveErrorSkips = 0;
       if (!queue.length) return;
       if (audio.currentTime > 3) {
         audio.currentTime = 0;
@@ -1427,6 +1483,7 @@
     });
 
     audio.addEventListener("loadedmetadata", () => {
+      consecutiveErrorSkips = 0;
       durationEl.textContent = formatTime(audio.duration);
     });
 
@@ -1438,6 +1495,7 @@
     });
 
     audio.addEventListener("play", () => {
+      consecutiveErrorSkips = 0;
       setPlayIcon(true);
       renderPlaylist();
       if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
@@ -1452,7 +1510,18 @@
     audio.addEventListener("ended", () => playNext(true));
 
     audio.addEventListener("error", () => {
-      setStatus(`Não foi possível carregar: ${audio.getAttribute("src")}`);
+      if (!audio.getAttribute("src")) return;
+      const failedName = currentTrack()?.title || currentTrack()?.file || "faixa";
+      consecutiveErrorSkips++;
+
+      if (queue.length > 1 && consecutiveErrorSkips < queue.length) {
+        setStatus(`Falha ao carregar "${failedName}". Pulando para a próxima...`);
+        setTimeout(() => {
+          playNext(false, true);
+        }, 450);
+      } else {
+        setStatus(`Não foi possível carregar "${failedName}" (verifique a rede ou o arquivo).`);
+      }
     });
 
     window.addEventListener("keydown", (e) => {
@@ -1471,7 +1540,7 @@
       const items = await res.json();
       if (!Array.isArray(items)) throw new Error("Resposta inválida");
 
-      return items
+      const tracks = items
         .filter((item) => item.type === "file" && /\.(mp3|ogg|wav|m4a|flac)$/i.test(item.name))
         .map((item, i) => ({
           id: `gh-${i}-${item.name}`,
@@ -1481,6 +1550,9 @@
           file: item.name,
           cover: ""
         }));
+
+      if (tracks.length) writeTracksCache(tracks);
+      return tracks;
     }
 
     async function init() {
@@ -1491,11 +1563,31 @@
       setPlayIcon(false);
       setRepeatIcon(repeatMode);
 
-      try {
-        allTracks = await fetchTracksFromGitHub();
-      } catch (_) {
-        const fallback = JSON.parse(document.getElementById("playlist-data").textContent || "[]");
-        allTracks = Array.isArray(fallback) ? fallback : [];
+      const freshCached = readTracksCache(false);
+      if (freshCached) {
+        allTracks = freshCached;
+        // Atualiza em segundo plano sem travar a abertura
+        fetchTracksFromGitHub()
+          .then((updated) => {
+            if (updated.length && JSON.stringify(updated) !== JSON.stringify(allTracks)) {
+              allTracks = updated;
+              applyFilters(activePlayingFile || currentTrack()?.file || null, false);
+            }
+          })
+          .catch(() => {});
+      } else {
+        try {
+          allTracks = await fetchTracksFromGitHub();
+        } catch (_) {
+          const staleCached = readTracksCache(true);
+          if (staleCached) {
+            allTracks = staleCached;
+            setStatus("Sem conexão com a API do GitHub: usando lista em cache.");
+          } else {
+            const fallback = JSON.parse(document.getElementById("playlist-data").textContent || "[]");
+            allTracks = Array.isArray(fallback) ? fallback : [];
+          }
+        }
       }
 
       if (!allTracks.length) {
