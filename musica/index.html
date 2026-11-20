@@ -114,11 +114,50 @@
     .cover {
       width: 72px;
       height: 72px;
-      border-radius: 10px;
-      object-fit: cover;
+      border-radius: 12px;
       background: var(--panel-2);
       border: 1px solid var(--border);
       flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .cover.is-playing {
+      border-color: rgba(56, 189, 248, 0.65);
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.15);
+    }
+
+    .anim-orbit {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px dashed rgba(56, 189, 248, 0.35);
+      display: grid;
+      place-items: center;
+      animation: orbitSpin 5s linear infinite;
+      animation-play-state: paused;
+    }
+
+    .cover.is-playing .anim-orbit {
+      animation-play-state: running;
+    }
+
+    .anim-orbit span {
+      position: absolute;
+      top: -4px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    @keyframes orbitSpin {
+      to { transform: rotate(360deg); }
     }
 
     .title {
@@ -521,6 +560,17 @@
         border-radius: 8px;
       }
 
+      .anim-orbit {
+        width: 30px;
+        height: 30px;
+      }
+
+      .anim-orbit span {
+        top: -3px;
+        width: 6px;
+        height: 6px;
+      }
+
       .title {
         font-size: 0.92rem;
         margin-bottom: 2px;
@@ -683,7 +733,9 @@
 
     <section class="player" aria-label="Controles do player">
       <div class="now-playing">
-        <img id="cover" class="cover" alt="Capa da faixa" />
+        <div id="cover" class="cover" aria-hidden="true">
+          <div class="anim-orbit"><span></span></div>
+        </div>
         <div>
           <h1 id="title" class="title">Carregando...</h1>
           <p id="artist" class="artist"></p>
@@ -1012,6 +1064,9 @@
       playIcon.innerHTML = isPlaying
         ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'
         : '<path d="M8 5v14l11-7z"/>';
+      if (coverEl) {
+        coverEl.classList.toggle("is-playing", Boolean(isPlaying));
+      }
     }
 
     function setRepeatIcon(mode) {
@@ -1358,7 +1413,6 @@
       audio.src = resolveAudioSrc(track);
       titleEl.textContent = track.title;
       artistEl.textContent = track.artist;
-      coverEl.src = isSafeCoverUrl(track.cover) ? track.cover : placeholderCover;
       seekEl.value = 0;
       currentTimeEl.textContent = "0:00";
       durationEl.textContent = "0:00";
